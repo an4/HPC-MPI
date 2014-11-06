@@ -250,10 +250,6 @@ int propagate(const t_param params, t_speed* cells, t_speed* tmp_cells)
 double collision(const t_param params, t_speed* cells, t_speed* tmp_cells, int* obstacles)
 {
   int ii,kk;                    /* generic counters */
-  const double c_sq = 1.0/3.0;  /* square of speed of sound */
-  const double w0 = 4.0/9.0;    /* weighting factor */
-  const double w1 = 1.0/9.0;    /* weighting factor */
-  const double w2 = 1.0/36.0;   /* weighting factor */
   double u_x,u_y;               /* av. velocities in x and y directions */
   double u[NSPEEDS];            /* directional velocities */
   double d_equ[NSPEEDS];        /* equilibrium densities */
@@ -311,34 +307,42 @@ double collision(const t_param params, t_speed* cells, t_speed* tmp_cells, int* 
     u[7] = - u_x - u_y;  /* south-west */
     u[8] =   u_x - u_y;  /* south-east */
     /* equilibrium densities */
+    
+    // 1/(2.0 * c_sq * c_sq) = 4.5
+    // 1/c_sq = 3.0
+    // 1/(2.0 * c_sq) = 1.5
+    // w0 = 0.44444444444
+    // w1 = 0.11111111111
+    // w2 = 0.02777777777
+    
     /* zero velocity density: weight w0 */
-    d_equ[0] = w0 * local_density * (1.0 - u_sq / (2.0 * c_sq));
+    d_equ[0] = 0.44444444444 * local_density * (1.0 - u_sq * 1.5);
     /* axis speeds: weight w1 */
-    d_equ[1] = w1 * local_density * (1.0 + u[1] / c_sq
-		             + (u[1] * u[1]) / (2.0 * c_sq * c_sq)
-		             - u_sq / (2.0 * c_sq));
-    d_equ[2] = w1 * local_density * (1.0 + u[2] / c_sq
-		             + (u[2] * u[2]) / (2.0 * c_sq * c_sq)
-		             - u_sq / (2.0 * c_sq));
-    d_equ[3] = w1 * local_density * (1.0 + u[3] / c_sq
-		             + (u[3] * u[3]) / (2.0 * c_sq * c_sq)
-		             - u_sq / (2.0 * c_sq));
-    d_equ[4] = w1 * local_density * (1.0 + u[4] / c_sq
-		             + (u[4] * u[4]) / (2.0 * c_sq * c_sq)
-		             - u_sq / (2.0 * c_sq));
+    d_equ[1] = 0.11111111111 * local_density * (1.0 + u[1] * 3.0
+		             + (u[1] * u[1]) * 4.5
+		             - u_sq * 1.5);
+    d_equ[2] = 0.11111111111 * local_density * (1.0 + u[2] * 3.0
+		             + (u[2] * u[2]) * 4.5
+		             - u_sq * 1.5);
+    d_equ[3] = 0.11111111111 * local_density * (1.0 + u[3] * 3.0
+		             + (u[3] * u[3]) * 4.5
+		             - u_sq * 1.5);
+    d_equ[4] = 0.11111111111 * local_density * (1.0 + u[4] * 3.0
+		             + (u[4] * u[4]) * 4.5
+		             - u_sq * 1.5);
     /* diagonal speeds: weight w2 */
-    d_equ[5] = w2 * local_density * (1.0 + u[5] / c_sq
-		             + (u[5] * u[5]) / (2.0 * c_sq * c_sq)
-		             - u_sq / (2.0 * c_sq));
-    d_equ[6] = w2 * local_density * (1.0 + u[6] / c_sq
-		             + (u[6] * u[6]) / (2.0 * c_sq * c_sq)
-		             - u_sq / (2.0 * c_sq));
-    d_equ[7] = w2 * local_density * (1.0 + u[7] / c_sq
-		             + (u[7] * u[7]) / (2.0 * c_sq * c_sq)
-		             - u_sq / (2.0 * c_sq));
-    d_equ[8] = w2 * local_density * (1.0 + u[8] / c_sq
-		             + (u[8] * u[8]) / (2.0 * c_sq * c_sq)
-		             - u_sq / (2.0 * c_sq));
+    d_equ[5] = 0.02777777777 * local_density * (1.0 + u[5] * 3.0
+		             + (u[5] * u[5]) * 4.5
+		             - u_sq * 1.5);
+    d_equ[6] = 0.02777777777 * local_density * (1.0 + u[6] * 3.0
+		             + (u[6] * u[6]) * 4.5
+		             - u_sq * 1.5);
+    d_equ[7] = 0.02777777777 * local_density * (1.0 + u[7] * 3.0
+		             + (u[7] * u[7]) * 4.5
+		             - u_sq * 1.5);
+    d_equ[8] = 0.02777777777 * local_density * (1.0 + u[8] * 3.0
+		             + (u[8] * u[8]) * 4.5
+		             - u_sq * 1.5);
     /* relaxation step */
     for(kk=0;kk<NSPEEDS;kk++) {
       cells[ii].speeds[kk] = (tmp_cells[ii].speeds[kk]

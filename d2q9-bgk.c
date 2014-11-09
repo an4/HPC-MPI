@@ -185,11 +185,10 @@ int main(int argc, char* argv[])
 int accelerate_flow(const t_param params, t_speed* cells, int* obstacles)
 {
   int ii,jj;     /* generic counters */
-  double w1,w2;  /* weighting factors */
   
   /* compute weighting factors */
-  w1 = params.density * params.accel / 9.0;
-  w2 = params.density * params.accel / 36.0;
+  double w1 = params.density * params.accel / 9.0;
+  double w2 = params.density * params.accel / 36.0;
 
   /* modify the 2nd row of the grid */
   ii=params.ny - 2;
@@ -217,17 +216,16 @@ int accelerate_flow(const t_param params, t_speed* cells, int* obstacles)
 int propagate(const t_param params, t_speed* cells, t_speed* tmp_cells)
 {
   int ii,jj;            /* generic counters */
-  int x_e,x_w,y_n,y_s;  /* indices of neighbouring cells */
 
   /* loop over _all_ cells */
   for(ii=0;ii<params.ny;ii++) {
     for(jj=0;jj<params.nx;jj++) {
       /* determine indices of axis-direction neighbours
       ** respecting periodic boundary conditions (wrap around) */
-      y_n = (ii + 1) % params.ny;
-      x_e = (jj + 1) % params.nx;
-      y_s = (ii == 0) ? (ii + params.ny - 1) : (ii - 1);
-      x_w = (jj == 0) ? (jj + params.nx - 1) : (jj - 1);
+      int y_n = (ii + 1) % params.ny;
+      int x_e = (jj + 1) % params.nx;
+      int y_s = (ii == 0) ? (ii + params.ny - 1) : (ii - 1);
+      int x_w = (jj == 0) ? (jj + params.nx - 1) : (jj - 1);
       /* propagate densities to neighbouring cells, following
       ** appropriate directions of travel and writing into
       ** scratch space grid */
@@ -250,16 +248,10 @@ int propagate(const t_param params, t_speed* cells, t_speed* tmp_cells)
 double collision(const t_param params, t_speed* cells, t_speed* tmp_cells, int* obstacles)
 {
   int ii,kk;                    /* generic counters */
-  double u_x,u_y;               /* av. velocities in x and y directions */
   double u[NSPEEDS];            /* directional velocities */
   double d_equ[NSPEEDS];        /* equilibrium densities */
-  double u_sq;                  /* squared velocity */
-  double local_density;         /* sum of densities in a particular cell */
   int    tot_cells = 0;         /* no. of cells used in calculation */
-  double tot_u;                 /* accumulated magnitudes of velocity for each cell */
-
-  /* initialise */
-  tot_u = 0.0;
+  double tot_u = 0.0;           /* accumulated magnitudes of velocity for each cell */
 
   /* loop over the cells in the grid
   ** NB the collision step is called after
@@ -269,12 +261,12 @@ double collision(const t_param params, t_speed* cells, t_speed* tmp_cells, int* 
     /* don't consider occupied cells */
     if(!obstacles[ii]) {
     /* compute local density total */
-    local_density = 0.0;
+    double local_density = 0.0;
     for(kk=0;kk<NSPEEDS;kk++) {
       local_density += tmp_cells[ii].speeds[kk];
     }
     /* compute x velocity component */
-    u_x = (tmp_cells[ii].speeds[1] + 
+    double u_x = (tmp_cells[ii].speeds[1] + 
            tmp_cells[ii].speeds[5] + 
            tmp_cells[ii].speeds[8]
            - (tmp_cells[ii].speeds[3] + 
@@ -282,7 +274,7 @@ double collision(const t_param params, t_speed* cells, t_speed* tmp_cells, int* 
           tmp_cells[ii].speeds[7]))
       / local_density;
     /* compute y velocity component */
-    u_y = (tmp_cells[ii].speeds[2] + 
+    double u_y = (tmp_cells[ii].speeds[2] + 
            tmp_cells[ii].speeds[5] + 
            tmp_cells[ii].speeds[6]
            - (tmp_cells[ii].speeds[4] + 
@@ -296,7 +288,7 @@ double collision(const t_param params, t_speed* cells, t_speed* tmp_cells, int* 
     ++tot_cells;
 
     /* velocity squared */ 
-    u_sq = u_x * u_x + u_y * u_y;
+    double u_sq = u_x * u_x + u_y * u_y;
     /* directional velocity components */
     u[1] =   u_x;        /* east */
     u[2] =         u_y;  /* north */

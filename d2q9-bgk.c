@@ -160,6 +160,7 @@ int main(int argc, char* argv[])
     printf("tot density: %.12E\n",total_density(params,cells));
 #endif
   }
+  
   gettimeofday(&timstr,NULL);
   toc=timstr.tv_sec+(timstr.tv_usec/1000000.0);
   getrusage(RUSAGE_SELF, &ru);
@@ -182,29 +183,28 @@ int main(int argc, char* argv[])
 
 int accelerate_flow(const t_param params, t_speed* cells, int* obstacles)
 {
-  int ii,jj;     /* generic counters */
+  int jj;     /* generic counters */
   
   /* compute weighting factors */
-  double w1 = params.density * params.accel / 9.0;
-  double w2 = params.density * params.accel / 36.0;
-
+  double w2 = params.density * params.accel * 0.02777777777;
+  double w1 = w2 * 4;
+  
   /* modify the 2nd row of the grid */
-  ii=params.ny - 2;
-  for(jj=0;jj<params.nx;jj++) {
+  for(jj=(params.ny-2)*params.nx;jj<(params.ny-1)*params.nx;jj++) {
     /* if the cell is not occupied and
     ** we don't send a density negative */
-    if( !obstacles[ii*params.nx + jj] && 
-	(cells[ii*params.nx + jj].speeds[3] - w1) > 0.0 &&
-	(cells[ii*params.nx + jj].speeds[6] - w2) > 0.0 &&
-	(cells[ii*params.nx + jj].speeds[7] - w2) > 0.0 ) {
+    if( !obstacles[jj] && 
+	(cells[jj].speeds[3] - w1) > 0.0 &&
+	(cells[jj].speeds[6] - w2) > 0.0 &&
+	(cells[jj].speeds[7] - w2) > 0.0 ) {
       /* increase 'east-side' densities */
-      cells[ii*params.nx + jj].speeds[1] += w1;
-      cells[ii*params.nx + jj].speeds[5] += w2;
-      cells[ii*params.nx + jj].speeds[8] += w2;
+      cells[jj].speeds[1] += w1;
+      cells[jj].speeds[5] += w2;
+      cells[jj].speeds[8] += w2;
       /* decrease 'west-side' densities */
-      cells[ii*params.nx + jj].speeds[3] -= w1;
-      cells[ii*params.nx + jj].speeds[6] -= w2;
-      cells[ii*params.nx + jj].speeds[7] -= w2;
+      cells[jj].speeds[3] -= w1;
+      cells[jj].speeds[6] -= w2;
+      cells[jj].speeds[7] -= w2;
     }
   }
 

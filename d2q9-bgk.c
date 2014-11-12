@@ -183,28 +183,28 @@ int main(int argc, char* argv[])
 
 int accelerate_flow(const t_param params, t_speed* cells, int* obstacles)
 {
-  int jj;     /* generic counters */
+  int ii;     /* generic counters */
   
   /* compute weighting factors */
   double w2 = params.density * params.accel * 0.02777777777;
   double w1 = w2 * 4;
   
   /* modify the 2nd row of the grid */
-  for(jj=(params.ny-2)*params.nx;jj<(params.ny-1)*params.nx;jj++) {
+  for(ii=(params.ny-2)*params.nx;ii<(params.ny-1)*params.nx;ii++) {
     /* if the cell is not occupied and
     ** we don't send a density negative */
-    if( !obstacles[jj] && 
-	(cells[jj].speeds[3] - w1) > 0.0 &&
-	(cells[jj].speeds[6] - w2) > 0.0 &&
-	(cells[jj].speeds[7] - w2) > 0.0 ) {
+    if( !obstacles[ii] && 
+	(cells[ii].speeds[3] - w1) > 0.0 &&
+	(cells[ii].speeds[6] - w2) > 0.0 &&
+	(cells[ii].speeds[7] - w2) > 0.0 ) {
       /* increase 'east-side' densities */
-      cells[jj].speeds[1] += w1;
-      cells[jj].speeds[5] += w2;
-      cells[jj].speeds[8] += w2;
+      cells[ii].speeds[1] += w1;
+      cells[ii].speeds[5] += w2;
+      cells[ii].speeds[8] += w2;
       /* decrease 'west-side' densities */
-      cells[jj].speeds[3] -= w1;
-      cells[jj].speeds[6] -= w2;
-      cells[jj].speeds[7] -= w2;
+      cells[ii].speeds[3] -= w1;
+      cells[ii].speeds[6] -= w2;
+      cells[ii].speeds[7] -= w2;
     }
   }
 

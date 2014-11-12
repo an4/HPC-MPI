@@ -76,8 +76,6 @@ typedef struct {
   double speeds[NSPEEDS];
 } t_speed;
 
-enum boolean { FALSE, TRUE };
-
 /*
 ** function prototypes
 */

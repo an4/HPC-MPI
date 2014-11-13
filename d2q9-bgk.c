@@ -213,95 +213,115 @@ int accelerate_flow(const t_param params, t_speed* cells, int* obstacles)
 
 int propagate(const t_param params, t_speed* cells, t_speed* tmp_cells)
 {
-  int ii,jj;            /* generic counters */
-
-  /* loop over _all_ cells */
-  for(ii=0;ii<params.ny;ii++) {
-    for(jj=0;jj<params.nx;jj++) {
-      /* determine indices of axis-direction neighbours
-      ** respecting periodic boundary conditions (wrap around) */
-      int y_n = (ii < (params.ny-1)) ? (ii+1) : 0;
-      int x_e = (jj < (params.nx-1)) ? (jj+1) : 0;
-      int y_s = (ii > 0) ? (ii - 1) : (ii + params.ny - 1);
-      int x_w = (jj > 0) ? (jj - 1) : (jj + params.nx - 1);
-      /* propagate densities to neighbouring cells, following
-      ** appropriate directions of travel and writing into
-      ** scratch space grid */
-      tmp_cells[ii *params.nx + jj].speeds[0]  = cells[ii*params.nx + jj].speeds[0]; /* central cell, */
-                                                                                     /* no movement   */
-//      tmp_cells[ii *params.nx + x_e].speeds[1] = cells[ii*params.nx + jj].speeds[1]; /* east */
-//      tmp_cells[y_n*params.nx + jj].speeds[2]  = cells[ii*params.nx + jj].speeds[2]; /* north */
-//      tmp_cells[ii *params.nx + x_w].speeds[3] = cells[ii*params.nx + jj].speeds[3]; /* west */
-//      tmp_cells[y_s*params.nx + jj].speeds[4]  = cells[ii*params.nx + jj].speeds[4]; /* south */
-      tmp_cells[y_n*params.nx + x_e].speeds[5] = cells[ii*params.nx + jj].speeds[5]; /* north-east */
-      tmp_cells[y_n*params.nx + x_w].speeds[6] = cells[ii*params.nx + jj].speeds[6]; /* north-west */
-      tmp_cells[y_s*params.nx + x_w].speeds[7] = cells[ii*params.nx + jj].speeds[7]; /* south-west */      
-      tmp_cells[y_s*params.nx + x_e].speeds[8] = cells[ii*params.nx + jj].speeds[8]; /* south-east */      
-    }
-  }
+  int ii;
   
   // Lower left corner
+  tmp_cells[0].speeds[0] = cells[0].speeds[0];
   tmp_cells[0].speeds[1] = cells[params.nx-1].speeds[1];
   tmp_cells[0].speeds[2] = cells[params.nx*(params.ny-1)].speeds[2];
   tmp_cells[0].speeds[3] = cells[1].speeds[3];
   tmp_cells[0].speeds[4] = cells[params.nx].speeds[4];
+  tmp_cells[0].speeds[5] = cells[params.nx*params.ny-1].speeds[5];
+  tmp_cells[0].speeds[6] = cells[params.nx*(params.ny-1)+1].speeds[6];
+  tmp_cells[0].speeds[7] = cells[params.nx+1].speeds[7];
+  tmp_cells[0].speeds[8] = cells[2*params.nx-1].speeds[8];
   
   // Lower right corner
+  tmp_cells[params.nx-1].speeds[0] = cells[params.nx-1].speeds[0];
   tmp_cells[params.nx-1].speeds[1] = cells[params.nx-2].speeds[1];
   tmp_cells[params.nx-1].speeds[2] = cells[(params.nx-1)*(params.ny-1)].speeds[2];
   tmp_cells[params.nx-1].speeds[3] = cells[0].speeds[3];
   tmp_cells[params.nx-1].speeds[4] = cells[2*params.nx-1].speeds[4];
+  tmp_cells[params.nx-1].speeds[5] = cells[params.nx*params.ny-2].speeds[5];
+  tmp_cells[params.nx-1].speeds[6] = cells[params.nx*(params.ny-1)].speeds[6];
+  tmp_cells[params.nx-1].speeds[7] = cells[params.nx].speeds[7];
+  tmp_cells[params.nx-1].speeds[8] = cells[2*params.nx-2].speeds[8];
   
   // Upper left corner
+  tmp_cells[params.nx*(params.ny-1)].speeds[0] = cells[params.nx*(params.ny-1)].speeds[0];
   tmp_cells[params.nx*(params.ny-1)].speeds[1] = cells[params.nx*params.ny-1].speeds[1];
   tmp_cells[params.nx*(params.ny-1)].speeds[2] = cells[params.nx*(params.ny-2)].speeds[2];
   tmp_cells[params.nx*(params.ny-1)].speeds[3] = cells[params.nx*(params.ny-1)+1].speeds[3];
   tmp_cells[params.nx*(params.ny-1)].speeds[4] = cells[0].speeds[4];
+  tmp_cells[params.nx*(params.ny-1)].speeds[5] = cells[params.nx*(params.ny-1)-1].speeds[5];
+  tmp_cells[params.nx*(params.ny-1)].speeds[6] = cells[params.nx*(params.ny-2)+1].speeds[6];
+  tmp_cells[params.nx*(params.ny-1)].speeds[7] = cells[1].speeds[7];
+  //tmp_cells[params.nx*(params.ny-1)].speeds[8] = cells[params.nx-1].speeds[8];
   
   // Upper right corner
+  tmp_cells[params.nx*params.ny-1].speeds[0] = cells[params.nx*params.ny-1].speeds[0];
   tmp_cells[params.nx*params.ny-1].speeds[1] = cells[params.nx*params.ny-2].speeds[1];
   tmp_cells[params.nx*params.ny-1].speeds[2] = cells[params.nx*(params.ny-1)-1].speeds[2];
   tmp_cells[params.nx*params.ny-1].speeds[3] = cells[params.nx*(params.ny-1)].speeds[3];
   tmp_cells[params.nx*params.ny-1].speeds[4] = cells[params.nx-1].speeds[4];
+  tmp_cells[params.nx*params.ny-1].speeds[5] = cells[params.nx*(params.ny-1)-2].speeds[5];
+  tmp_cells[params.nx*params.ny-1].speeds[6] = cells[params.nx*(params.ny-2)].speeds[6];
+  tmp_cells[params.nx*params.ny-1].speeds[7] = cells[0].speeds[7];
+  tmp_cells[params.nx*params.ny-1].speeds[8] = cells[params.nx-2].speeds[8];
   
   // First row
   for(ii=1;ii<params.ny-1;ii++) {
+    tmp_cells[ii].speeds[0] = cells[ii].speeds[0];
   	tmp_cells[ii].speeds[1] = cells[ii-1].speeds[1];
     tmp_cells[ii].speeds[2] = cells[params.nx*(params.ny-1)+ii].speeds[2];
     tmp_cells[ii].speeds[3] = cells[ii+1].speeds[3];
     tmp_cells[ii].speeds[4] = cells[ii+params.nx].speeds[4];
+    tmp_cells[ii].speeds[5] = cells[params.nx*(params.ny-1)+ii-1].speeds[5];
+    tmp_cells[ii].speeds[6] = cells[params.nx*(params.ny-1)+ii+1].speeds[6];
+    tmp_cells[ii].speeds[7] = cells[params.nx+ii+1].speeds[7];
+    tmp_cells[ii].speeds[8] = cells[params.nx+ii-1].speeds[8];
   }
   
   // Last row
   for(ii=params.nx*(params.ny-1)+1;ii<params.ny*params.nx-1;ii++) {
+    tmp_cells[ii].speeds[0] = cells[ii].speeds[0];
   	tmp_cells[ii].speeds[1] = cells[ii-1].speeds[1];
     tmp_cells[ii].speeds[2] = cells[ii-params.nx].speeds[2];
     tmp_cells[ii].speeds[3] = cells[ii+1].speeds[3];
     tmp_cells[ii].speeds[4] = cells[ii-params.nx*(params.ny-1)].speeds[4];
+    tmp_cells[ii].speeds[5] = cells[ii-params.nx-1].speeds[5];
+    tmp_cells[ii].speeds[6] = cells[ii-params.nx+1].speeds[6];
+    tmp_cells[ii].speeds[7] = cells[ii-params.nx*(params.ny-1)+1].speeds[7];
+    tmp_cells[ii].speeds[8] = cells[ii-params.nx*(params.ny-1)-1].speeds[8];
   }
   
   for(ii=params.nx; ii<params.nx*(params.ny-1); ii++) {
   	// First column
   	if(ii%params.nx==0) {
+  	  tmp_cells[ii].speeds[0] = cells[ii].speeds[0];
   	  tmp_cells[ii].speeds[1] = cells[ii+params.nx-1].speeds[1];
       tmp_cells[ii].speeds[2] = cells[ii-params.nx].speeds[2];
       tmp_cells[ii].speeds[3] = cells[ii+1].speeds[3];
       tmp_cells[ii].speeds[4] = cells[ii+params.nx].speeds[4];
+      tmp_cells[ii].speeds[5] = cells[ii-1].speeds[5];
+      tmp_cells[ii].speeds[6] = cells[ii-params.nx+1].speeds[6];
+      tmp_cells[ii].speeds[7] = cells[ii+params.nx+1].speeds[7];
+      tmp_cells[ii].speeds[8] = cells[ii+2*params.nx-1].speeds[8];
       continue;
   	}
   	// Last column
   	if((ii+1)%params.nx==0) {
+  	  tmp_cells[ii].speeds[0] = cells[ii].speeds[0];
   	  tmp_cells[ii].speeds[1] = cells[ii-1].speeds[1];
       tmp_cells[ii].speeds[2] = cells[ii-params.nx].speeds[2];
       tmp_cells[ii].speeds[3] = cells[ii-params.nx+1].speeds[3];
       tmp_cells[ii].speeds[4] = cells[ii+params.nx].speeds[4];
+      tmp_cells[ii].speeds[5] = cells[ii-params.nx-1].speeds[5];
+      tmp_cells[ii].speeds[6] = cells[ii-2*params.nx+1].speeds[6];
+      tmp_cells[ii].speeds[7] = cells[ii+1].speeds[7];
+      tmp_cells[ii].speeds[8] = cells[ii+params.nx-1].speeds[8];
       continue;
   	}
   	// General
+  	tmp_cells[ii].speeds[0] = cells[ii].speeds[0];
   	tmp_cells[ii].speeds[1] = cells[ii-1].speeds[1];
     tmp_cells[ii].speeds[2] = cells[ii-params.nx].speeds[2];
     tmp_cells[ii].speeds[3] = cells[ii+1].speeds[3];
     tmp_cells[ii].speeds[4] = cells[ii+params.nx].speeds[4];
+    tmp_cells[ii].speeds[5] = cells[ii-params.nx-1].speeds[5];
+    tmp_cells[ii].speeds[6] = cells[ii-params.nx+1].speeds[6];
+    tmp_cells[ii].speeds[7] = cells[ii+params.nx+1].speeds[7];
+    tmp_cells[ii].speeds[8] = cells[ii+params.nx-1].speeds[8];
   }
 
   return EXIT_SUCCESS;

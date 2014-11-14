@@ -167,7 +167,12 @@ int main(int argc, char* argv[])
 		accelerate_flow(params,cells,obstacles);
 		propagate(params,cells,tmp_cells);
 
-		av_vels[ii] = collision(params,cells,tmp_cells,obstacles);	
+		if(rank == size-1) {
+			av_vels[ii] = collision(params,cells,tmp_cells,obstacles);	
+		} else {
+			collision(params,cells,tmp_cells,obstacles);
+		}
+		
 
 		#ifdef DEBUG
 		printf("==timestep: %d==\n",ii);
@@ -498,8 +503,8 @@ float collision(const t_param params, t_speed* cells, t_speed* tmp_cells, int* o
 			MPI_Recv(&temp_cells, 1, MPI_INT, MPI_ANY_SOURCE, 2, MPI_COMM_WORLD, &status);
 			tot_cells += temp_cells;
 		}
-		return tot_u / (float)tot_cells;
 	}
+	return tot_u / (float)tot_cells;
 }
 
 int initialise(const char* paramfile, const char* obstaclefile,

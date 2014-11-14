@@ -163,7 +163,15 @@ int main(int argc, char* argv[])
   for (ii=0;ii<params.maxIters;ii++) {
     accelerate_flow(params,cells,obstacles);
     propagate(params,cells,tmp_cells);
-    av_vels[ii] = collision(params,cells,tmp_cells,obstacles);
+
+    int rank,size;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    if(rank < size-1) {
+    	collision(params,cells,tmp_cells,obstacles);
+    } else {
+    	av_vels[ii] = collision(params,cells,tmp_cells,obstacles);	
+    } 
     
 #ifdef DEBUG
     printf("==timestep: %d==\n",ii);
@@ -472,8 +480,9 @@ float collision(const t_param params, t_speed* cells, t_speed* tmp_cells, int* o
 		// tot_u tag = 1
 		MPI_Send(&tot_u, 1, MPI_FLOAT, size-1, 1, MPI_COMM_WORLD);
 		// tot_cells tag = 2
-		//MPI_Send(&tot_cells, 1, MPI_INT, size-1, 2, MPI_COMM_WORLD);
+		MPI_Send(&tot_cells, 1, MPI_INT, size-1, 2, MPI_COMM_WORLD);
 
+		return 0;
 	} else {
 		// Receive tot_u and tot_cells
 		// Compute total and return
@@ -486,13 +495,11 @@ float collision(const t_param params, t_speed* cells, t_speed* tmp_cells, int* o
 			MPI_Recv(&temp_u, 1, MPI_FLOAT, MPI_ANY_SOURCE, 1, MPI_COMM_WORLD, &status);
 			tot_u += temp_u;
 		}
-		// // Receive tot_cells
-		// for(i=0; i<size-1; i++) {
-		// 	MPI_Recv(&temp_cells, 1, MPI_INT, MPI_ANY_SOURCE, 1, MPI_COMM_WORLD, &status);
-		// 	tot_cells += temp_cells;
-		// }
-
-		tot_cells = 100;
+		// Receive tot_cells
+		for(i=0; i<size-1; i++) {
+			MPI_Recv(&temp_cells, 1, MPI_INT, MPI_ANY_SOURCE, 1, MPI_COMM_WORLD, &status);
+			tot_cells += temp_cells;
+		}
 
 		return tot_u / (float)tot_cells;
 	}

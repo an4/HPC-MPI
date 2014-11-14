@@ -369,7 +369,7 @@ float collision(const t_param params, t_speed* cells, t_speed* tmp_cells, int* o
 
 	if(rank < size-1) {
 		//for(ii=0;ii<params.ny*params.nx;ii++) {
-		for(ii=rank*piece; ii<(rank+1)*piece; ii++)
+		for(ii=rank*piece; ii<(rank+1)*piece; ii++) {
 			/* don't consider occupied cells */
 			if(!obstacles[ii]) {
 				/* compute local density total */

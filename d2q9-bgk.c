@@ -160,7 +160,8 @@ int main(int argc, char* argv[])
   gettimeofday(&timstr,NULL);
   tic=timstr.tv_sec+(timstr.tv_usec/1000000.0);
 
-  for (ii=0;ii<params.maxIters;ii++) {
+  //for (ii=0;ii<params.maxIters;ii++) {
+  for(ii=0;ii<1;ii++) {
     accelerate_flow(params,cells,obstacles);
     propagate(params,cells,tmp_cells);
 
@@ -376,6 +377,7 @@ float collision(const t_param params, t_speed* cells, t_speed* tmp_cells, int* o
 
 	if(rank < size-1) {
 		//for(ii=0;ii<params.ny*params.nx;ii++) {
+		printf("From %d to %d\n", rank*piece, (rank+1)*piece);
 		for(ii=rank*piece; ii<(rank+1)*piece; ii++) {
 			/* don't consider occupied cells */
 			if(!obstacles[ii]) {

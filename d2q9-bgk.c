@@ -476,10 +476,14 @@ int collision(const t_param params, t_speed* cells, t_speed* tmp_cells, int* obs
 
 	if(rank < size-1) {
 		// Send tot_u and tot_cells
-		// tot_u tag = 1
-		MPI_Send(&tot_u, 1, MPI_FLOAT, size-1, index, MPI_COMM_WORLD);
-		// tot_cells tag = 2
-		MPI_Send(&tot_cells, 1, MPI_INT, size-1, index+params.maxIters, MPI_COMM_WORLD);
+		int broadcast;
+		MPI_Bcast(&bradcast, 1, MPI_Int, size-1, MPI_COMM_WORLD);
+		if(index==0 || broadcast==index-1) {
+			// tot_u
+			MPI_Send(&tot_u, 1, MPI_FLOAT, size-1, index, MPI_COMM_WORLD);
+			// tot_cells
+			MPI_Send(&tot_cells, 1, MPI_INT, size-1, index+params.maxIters, MPI_COMM_WORLD);
+		}
 	} else {
 		// Receive tot_u and tot_cells
 		// Compute total and return
@@ -498,6 +502,8 @@ int collision(const t_param params, t_speed* cells, t_speed* tmp_cells, int* obs
 			MPI_Recv(&temp_cells, 1, MPI_INT, MPI_ANY_SOURCE, index+params.maxIters, MPI_COMM_WORLD, &status);
 			tot_cells += temp_cells;
 		}
+
+		MPI_Bcast(&index, 1, MPI_Int, size-1, MPI_COMM_WORLD);
 
 		av_vels[index] = tot_u / (float)tot_cells;
 	}

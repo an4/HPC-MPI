@@ -93,7 +93,7 @@ int initialise(const char* paramfile, const char* obstaclefile,
 */
 int accelerate_flow(const t_param params, t_speed* cells, int* obstacles);
 int propagate(const t_param params, t_speed* cells, t_speed* tmp_cells);
-int collision(const t_param params, t_speed* cells, t_speed* tmp_cells, int* obstacles, float average_velocity);
+int collision(const t_param params, t_speed* cells, t_speed* tmp_cells, int* obstacles, float* av_vels_ptr, int index);
 int write_values(const t_param params, t_speed* cells, int* obstacles, float* av_vels);
 
 /* finalise, including freeing up allocated memory */
@@ -167,7 +167,7 @@ int main(int argc, char* argv[])
 		accelerate_flow(params,cells,obstacles);
 		propagate(params,cells,tmp_cells);
 
-		collision(params,cells,tmp_cells,obstacles, &av_vels[ii]);	
+		collision(params,cells,tmp_cells,obstacles, &av_vels, ii);	
 		
 
 		#ifdef DEBUG
@@ -351,7 +351,7 @@ int propagate(const t_param params, t_speed* cells, t_speed* tmp_cells)
   return EXIT_SUCCESS;
 }
 
-int collision(const t_param params, t_speed* cells, t_speed* tmp_cells, int* obstacles, float average_velocity)
+int collision(const t_param params, t_speed* cells, t_speed* tmp_cells, int* obstacles, float* av_vells, int index)
 {
 	int ii,kk;                    /* generic counters */
 	float u[NSPEEDS];            /* directional velocities */
@@ -500,7 +500,7 @@ int collision(const t_param params, t_speed* cells, t_speed* tmp_cells, int* obs
 			tot_cells += temp_cells;
 		}
 
-		average_velocity = tot_u / (float)tot_cells;
+		av_vels[index] = tot_u / (float)tot_cells;
 	}
 	return EXIT_SUCCESS;
 }

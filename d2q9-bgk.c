@@ -370,7 +370,6 @@ int collision(const t_param params, t_speed* cells, t_speed* tmp_cells, int* obs
 	int piece = (params.nx*params.ny)/size;
 
 	// Master = size-1
-	// Workers 0 -> size-2
 
 	// Determine rank of current process
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -478,9 +477,9 @@ int collision(const t_param params, t_speed* cells, t_speed* tmp_cells, int* obs
 	if(rank < size-1) {
 		// Send tot_u and tot_cells
 		// tot_u tag = 1
-		MPI_Send(&tot_u, 1, MPI_FLOAT, size-1, 1, MPI_COMM_WORLD);
+		MPI_Send(&tot_u, 1, MPI_FLOAT, size-1, index, MPI_COMM_WORLD);
 		// tot_cells tag = 2
-		MPI_Send(&tot_cells, 1, MPI_INT, size-1, 2, MPI_COMM_WORLD);
+		MPI_Send(&tot_cells, 1, MPI_INT, size-1, index+params.maxIters, MPI_COMM_WORLD);
 	} else {
 		// Receive tot_u and tot_cells
 		// Compute total and return
@@ -490,12 +489,13 @@ int collision(const t_param params, t_speed* cells, t_speed* tmp_cells, int* obs
 
 		// Receive tot_u
 		for(i=0; i<size-1; i++) {
-			MPI_Recv(&temp_u, 1, MPI_FLOAT, MPI_ANY_SOURCE, 1, MPI_COMM_WORLD, &status);
+			MPI_Recv(&temp_u, 1, MPI_FLOAT, MPI_ANY_SOURCE, index, MPI_COMM_WORLD, &status);
+
 			tot_u += temp_u;
 		}
 		// Receive tot_cells
 		for(i=0; i<size-1; i++) {
-			MPI_Recv(&temp_cells, 1, MPI_INT, MPI_ANY_SOURCE, 2, MPI_COMM_WORLD, &status);
+			MPI_Recv(&temp_cells, 1, MPI_INT, MPI_ANY_SOURCE, index+params.maxIters, MPI_COMM_WORLD, &status);
 			tot_cells += temp_cells;
 		}
 

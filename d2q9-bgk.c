@@ -49,12 +49,13 @@
 ** if you choose a different obstacle file.
 */
 
-#include<stdio.h>
-#include<stdlib.h>
-#include<math.h>
-#include<time.h>
-#include<sys/time.h>
-#include<sys/resource.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+#include <time.h>
+#include <sys/time.h>
+#include <sys/resource.h>
+#include "mpi.h"
 
 #define NSPEEDS         9
 #define FINALSTATEFILE  "final_state.dat"
@@ -145,6 +146,16 @@ int main(int argc, char* argv[])
   /* initialise our data structures and load values from file */
   initialise(paramfile, obstaclefile, &params, &cells, &tmp_cells, &obstacles, &av_vels);
 
+  // Initialize MPI environment.
+  MPI_Init(&argc, &argv);
+
+  int flag;
+  // Check if initialization was successful.
+  MPI_Initialized(&flag);
+  if(flag != 1) {
+  	MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
+  }
+
   /* iterate for maxIters timesteps */
   gettimeofday(&timstr,NULL);
   tic=timstr.tv_sec+(timstr.tv_usec/1000000.0);
@@ -168,6 +179,9 @@ int main(int argc, char* argv[])
   usrtim=timstr.tv_sec+(timstr.tv_usec/1000000.0);
   timstr=ru.ru_stime;        
   systim=timstr.tv_sec+(timstr.tv_usec/1000000.0);
+
+  // Finalize MPI environment.
+  MPI_Finalize();
 
   /* write final values and free memory */
   printf("==done==\n");

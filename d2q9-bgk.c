@@ -120,87 +120,89 @@ void usage(const char* exe);
 */
 int main(int argc, char* argv[])
 {
-  char*    paramfile = NULL;    /* name of the input parameter file */
-  char*    obstaclefile = NULL; /* name of a the input obstacle file */
-  t_param  params;              /* struct to hold parameter values */
-  t_speed* cells     = NULL;    /* grid containing fluid densities */
-  t_speed* tmp_cells = NULL;    /* scratch space */
-  int*     obstacles = NULL;    /* grid indicating which cells are blocked */
-  float*  av_vels   = NULL;    /* a record of the av. velocity computed for each timestep */
-  int      ii;                  /* generic counter */
-  struct timeval timstr;        /* structure to hold elapsed time */
-  struct rusage ru;             /* structure to hold CPU time--system and user */
-  double tic,toc;               /* floating point numbers to calculate elapsed wallclock time */
-  double usrtim;                /* floating point number to record elapsed user CPU time */
-  double systim;                /* floating point number to record elapsed system CPU time */
+	char*    paramfile = NULL;    /* name of the input parameter file */
+	char*    obstaclefile = NULL; /* name of a the input obstacle file */
+	t_param  params;              /* struct to hold parameter values */
+	t_speed* cells     = NULL;    /* grid containing fluid densities */
+	t_speed* tmp_cells = NULL;    /* scratch space */
+	int*     obstacles = NULL;    /* grid indicating which cells are blocked */
+	float*  av_vels   = NULL;    /* a record of the av. velocity computed for each timestep */
+	int      ii;                  /* generic counter */
+	struct timeval timstr;        /* structure to hold elapsed time */
+	struct rusage ru;             /* structure to hold CPU time--system and user */
+	double tic,toc;               /* floating point numbers to calculate elapsed wallclock time */
+	double usrtim;                /* floating point number to record elapsed user CPU time */
+	double systim;                /* floating point number to record elapsed system CPU time */
 
-  /* parse the command line */
-  if(argc != 3) {
-    usage(argv[0]);
-  }
-  else{
-    paramfile = argv[1];
-    obstaclefile = argv[2];
-  }
+	/* parse the command line */
+	if(argc != 3) {
+		usage(argv[0]);
+	} else {
+		paramfile = argv[1];
+		obstaclefile = argv[2];
+	}
 
-  /* initialise our data structures and load values from file */
-  initialise(paramfile, obstaclefile, &params, &cells, &tmp_cells, &obstacles, &av_vels);
+	/* initialise our data structures and load values from file */
+	initialise(paramfile, obstaclefile, &params, &cells, &tmp_cells, &obstacles, &av_vels);
 
-  // Initialize MPI environment.
-  MPI_Init(&argc, &argv);
+	// Initialize MPI environment.
+	MPI_Init(&argc, &argv);
 
-  int flag;
-  // Check if initialization was successful.
-  MPI_Initialized(&flag);
-  if(flag != 1) {
-  	MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
-  }
+	int flag;
+	// Check if initialization was successful.
+	MPI_Initialized(&flag);
+	if(flag != 1) {
+		MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
+	}
 
-  /* iterate for maxIters timesteps */
-  gettimeofday(&timstr,NULL);
-  tic=timstr.tv_sec+(timstr.tv_usec/1000000.0);
+	int rank,size;
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-  for (ii=0;ii<params.maxIters;ii++) {
-    accelerate_flow(params,cells,obstacles);
-    propagate(params,cells,tmp_cells);
+	/* iterate for maxIters timesteps */
+	gettimeofday(&timstr,NULL);
+	tic=timstr.tv_sec+(timstr.tv_usec/1000000.0);
 
-    int rank,size;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &size);
-    if(rank < size-1) {
-    	collision(params,cells,tmp_cells,obstacles);
-    } else {
-    	av_vels[ii] = collision(params,cells,tmp_cells,obstacles);	
-    } 
-    
-#ifdef DEBUG
-    printf("==timestep: %d==\n",ii);
-    printf("av velocity: %.12E\n", av_vels[ii]);
-    printf("tot density: %.12E\n",total_density(params,cells));
-#endif
-  }
-  
-  gettimeofday(&timstr,NULL);
-  toc=timstr.tv_sec+(timstr.tv_usec/1000000.0);
-  getrusage(RUSAGE_SELF, &ru);
-  timstr=ru.ru_utime;        
-  usrtim=timstr.tv_sec+(timstr.tv_usec/1000000.0);
-  timstr=ru.ru_stime;        
-  systim=timstr.tv_sec+(timstr.tv_usec/1000000.0);
+	for(ii=0;ii<params.maxIters;ii++) {
+		accelerate_flow(params,cells,obstacles);
+		propagate(params,cells,tmp_cells);
 
-  // Finalize MPI environment.
-  MPI_Finalize();
+		if(rank < size-1) {
+			collision(params,cells,tmp_cells,obstacles);
+		} else {
+			av_vels[ii] = collision(params,cells,tmp_cells,obstacles);	
+		} 
 
-  /* write final values and free memory */
-  printf("==done==\n");
-  printf("Reynolds number:\t\t%.12E\n",calc_reynolds(params,cells,obstacles));
-  printf("Elapsed time:\t\t\t%.6lf (s)\n", toc-tic);
-  printf("Elapsed user CPU time:\t\t%.6lf (s)\n", usrtim);
-  printf("Elapsed system CPU time:\t%.6lf (s)\n", systim);
-  write_values(params,cells,obstacles,av_vels);
-  finalise(&params, &cells, &tmp_cells, &obstacles, &av_vels);
-  
-  return EXIT_SUCCESS;
+		#ifdef DEBUG
+		printf("==timestep: %d==\n",ii);
+		printf("av velocity: %.12E\n", av_vels[ii]);
+		printf("tot density: %.12E\n",total_density(params,cells));
+		#endif
+	}
+
+	gettimeofday(&timstr,NULL);
+	toc=timstr.tv_sec+(timstr.tv_usec/1000000.0);
+	getrusage(RUSAGE_SELF, &ru);
+	timstr=ru.ru_utime;        
+	usrtim=timstr.tv_sec+(timstr.tv_usec/1000000.0);
+	timstr=ru.ru_stime;        
+	systim=timstr.tv_sec+(timstr.tv_usec/1000000.0);
+
+	// Finalize MPI environment.
+	MPI_Finalize();
+
+	if(rank == size-1) {
+		/* write final values and free memory */
+		printf("==done==\n");
+		printf("Reynolds number:\t\t%.12E\n",calc_reynolds(params,cells,obstacles));
+		printf("Elapsed time:\t\t\t%.6lf (s)\n", toc-tic);
+		printf("Elapsed user CPU time:\t\t%.6lf (s)\n", usrtim);
+		printf("Elapsed system CPU time:\t%.6lf (s)\n", systim);
+		write_values(params,cells,obstacles,av_vels);
+		finalise(&params, &cells, &tmp_cells, &obstacles, &av_vels);
+	}
+
+	return EXIT_SUCCESS;
 }
 
 int accelerate_flow(const t_param params, t_speed* cells, int* obstacles)

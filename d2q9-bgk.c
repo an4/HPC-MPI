@@ -367,7 +367,7 @@ float collision(const t_param params, t_speed* cells, t_speed* tmp_cells, int* o
 	MPI_Comm_size(MPI_COMM_WORLD, &size);
 
 	// The number of cells assigned to each process;
-	int piece = (params.nx*params.ny)/size;
+	int piece = (params.nx*params.ny)/(size-1);
 
 	// Master = size-1
 	// Workers 0 -> size-2

@@ -1,0 +1,31 @@
+#!/bin/bash 
+
+#PBS -N MPI
+#PBS -o OUT
+
+
+#PBS -l nodes=1:ppn=4,walltime=00:05:00
+
+#! Mail to user if job aborts
+#PBS -m a
+
+#! submit to the 'hpc-course' queue
+#PBS -q hpc-course
+
+#! application name
+application="./d2q9-bgk.exe input_128x128.params obstacles_128x128_box_square.dat"
+
+#! Run options for the application
+options=""
+
+#! change the working directory (default is home directory)
+
+cd $PBS_O_WORKDIR
+ 
+#! Create a machine file for MPI
+cat $PBS_NODEFILE > machine.file.$PBS_JOBID
+
+numnodes=`wc $PBS_NODEFILE | awk '{ print $1 }'`
+
+#! Run the parallel MPI executable (nodes*ppn)
+mpirun -np $numnodes -machinefile machine.file.$PBS_JOBID $application $options

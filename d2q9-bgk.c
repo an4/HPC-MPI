@@ -93,7 +93,7 @@ int initialise(const char* paramfile, const char* obstaclefile,
 */
 int accelerate_flow(const t_param params, t_speed* cells, int* obstacles);
 int propagate(const t_param params, t_speed* cells, t_speed* tmp_cells);
-float collision(const t_param params, t_speed* cells, t_speed* tmp_cells, int* obstacles);
+int collision(const t_param params, t_speed* cells, t_speed* tmp_cells, int* obstacles, float average_velocity);
 int write_values(const t_param params, t_speed* cells, int* obstacles, float* av_vels);
 
 /* finalise, including freeing up allocated memory */
@@ -167,11 +167,7 @@ int main(int argc, char* argv[])
 		accelerate_flow(params,cells,obstacles);
 		propagate(params,cells,tmp_cells);
 
-		if(rank == size-1) {
-			av_vels[ii] = collision(params,cells,tmp_cells,obstacles);	
-		} else {
-			collision(params,cells,tmp_cells,obstacles);
-		}
+		collision(params,cells,tmp_cells,obstacles, &av_vells[ii]);	
 		
 
 		#ifdef DEBUG
@@ -355,7 +351,7 @@ int propagate(const t_param params, t_speed* cells, t_speed* tmp_cells)
   return EXIT_SUCCESS;
 }
 
-float collision(const t_param params, t_speed* cells, t_speed* tmp_cells, int* obstacles)
+float collision(const t_param params, t_speed* cells, t_speed* tmp_cells, int* obstacles, float average_velocity)
 {
 	int ii,kk;                    /* generic counters */
 	float u[NSPEEDS];            /* directional velocities */
@@ -503,8 +499,10 @@ float collision(const t_param params, t_speed* cells, t_speed* tmp_cells, int* o
 			MPI_Recv(&temp_cells, 1, MPI_INT, MPI_ANY_SOURCE, 2, MPI_COMM_WORLD, &status);
 			tot_cells += temp_cells;
 		}
+
+		average_velocity = tot_u / (float)tot_cells;
 	}
-	return tot_u / (float)tot_cells;
+	return EXIT_SUCCESS;
 }
 
 int initialise(const char* paramfile, const char* obstaclefile,

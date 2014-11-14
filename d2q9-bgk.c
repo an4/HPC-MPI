@@ -481,8 +481,6 @@ float collision(const t_param params, t_speed* cells, t_speed* tmp_cells, int* o
 		MPI_Send(&tot_u, 1, MPI_FLOAT, size-1, 1, MPI_COMM_WORLD);
 		// tot_cells tag = 2
 		MPI_Send(&tot_cells, 1, MPI_INT, size-1, 2, MPI_COMM_WORLD);
-
-		return 0;
 	} else {
 		// Receive tot_u and tot_cells
 		// Compute total and return
@@ -497,12 +495,12 @@ float collision(const t_param params, t_speed* cells, t_speed* tmp_cells, int* o
 		}
 		// Receive tot_cells
 		for(i=0; i<size-1; i++) {
-			MPI_Recv(&temp_cells, 1, MPI_INT, MPI_ANY_SOURCE, 1, MPI_COMM_WORLD, &status);
+			MPI_Recv(&temp_cells, 1, MPI_INT, MPI_ANY_SOURCE, 2, MPI_COMM_WORLD, &status);
 			tot_cells += temp_cells;
 		}
-
-		return tot_u / (float)tot_cells;
 	}
+
+	return tot_u / (float)tot_cells;
 }
 
 int initialise(const char* paramfile, const char* obstaclefile,

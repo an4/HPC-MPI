@@ -343,115 +343,158 @@ int propagate(const t_param params, t_speed* cells, t_speed* tmp_cells)
 
 float collision(const t_param params, t_speed* cells, t_speed* tmp_cells, int* obstacles)
 {
-  int ii,kk;                    /* generic counters */
-  float u[NSPEEDS];            /* directional velocities */
-  float d_equ[NSPEEDS];        /* equilibrium densities */
-  int    tot_cells = 0;         /* no. of cells used in calculation */
-  float tot_u = 0.0;           /* accumulated magnitudes of velocity for each cell */
+	int ii,kk;                    /* generic counters */
+	float u[NSPEEDS];            /* directional velocities */
+	float d_equ[NSPEEDS];        /* equilibrium densities */
+	int    tot_cells = 0;         /* no. of cells used in calculation */
+	float tot_u = 0.0;           /* accumulated magnitudes of velocity for each cell */
 
-  /* loop over the cells in the grid
-  ** NB the collision step is called after
-  ** the propagate step and so values of interest
-  ** are in the scratch-space grid */
-  for(ii=0;ii<params.ny*params.nx;ii++) {
-    /* don't consider occupied cells */
-    if(!obstacles[ii]) {
-    /* compute local density total */
-    float local_density = 0.0;
-    for(kk=0;kk<NSPEEDS;kk++) {
-      local_density += tmp_cells[ii].speeds[kk];
-    }
-    /* compute x velocity component */
-    float u_x = (tmp_cells[ii].speeds[1] + 
-           tmp_cells[ii].speeds[5] + 
-           tmp_cells[ii].speeds[8]
-           - (tmp_cells[ii].speeds[3] + 
-          tmp_cells[ii].speeds[6] + 
-          tmp_cells[ii].speeds[7]))
-      / local_density;
-    /* compute y velocity component */
-    float u_y = (tmp_cells[ii].speeds[2] + 
-           tmp_cells[ii].speeds[5] + 
-           tmp_cells[ii].speeds[6]
-           - (tmp_cells[ii].speeds[4] + 
-          tmp_cells[ii].speeds[7] + 
-          tmp_cells[ii].speeds[8]))
-      / local_density;
-      
-    /* accumulate the norm of x- and y- velocity components */
-    tot_u += sqrt((u_x * u_x) + (u_y * u_y));
-    /* increase counter of inspected cells */
-    ++tot_cells;
+	// MPI variables.
+	int size;
+	int rank;
+	int tag;
+	MPI_Status status;  
 
-    /* velocity squared */ 
-    float u_sq = u_x * u_x + u_y * u_y;
-    /* directional velocity components */
-    u[1] =   u_x;        /* east */
-    u[2] =         u_y;  /* north */
-    u[3] = - u_x;        /* west */
-    u[4] =       - u_y;  /* south */
-    u[5] =   u_x + u_y;  /* north-east */
-    u[6] = - u_x + u_y;  /* north-west */
-    u[7] = - u_x - u_y;  /* south-west */
-    u[8] =   u_x - u_y;  /* south-east */
-    /* equilibrium densities */
-    
-    // 1/(2.0 * c_sq * c_sq) = 4.5
-    // 1/c_sq = 3.0
-    // 1/(2.0 * c_sq) = 1.5
-    // w0 = 0.44444444444
-    // w1 = 0.11111111111
-    // w2 = 0.02777777777
-    
-    /* zero velocity density: weight w0 */
-    d_equ[0] = 0.44444444444 * local_density * (1.0 - u_sq * 1.5);
-    /* axis speeds: weight w1 */
-    d_equ[1] = 0.11111111111 * local_density * (1.0 + u[1] * 3.0
-		             + (u[1] * u[1]) * 4.5
-		             - u_sq * 1.5);
-    d_equ[2] = 0.11111111111 * local_density * (1.0 + u[2] * 3.0
-		             + (u[2] * u[2]) * 4.5
-		             - u_sq * 1.5);
-    d_equ[3] = 0.11111111111 * local_density * (1.0 + u[3] * 3.0
-		             + (u[3] * u[3]) * 4.5
-		             - u_sq * 1.5);
-    d_equ[4] = 0.11111111111 * local_density * (1.0 + u[4] * 3.0
-		             + (u[4] * u[4]) * 4.5
-		             - u_sq * 1.5);
-    /* diagonal speeds: weight w2 */
-    d_equ[5] = 0.02777777777 * local_density * (1.0 + u[5] * 3.0
-		             + (u[5] * u[5]) * 4.5
-		             - u_sq * 1.5);
-    d_equ[6] = 0.02777777777 * local_density * (1.0 + u[6] * 3.0
-		             + (u[6] * u[6]) * 4.5
-		             - u_sq * 1.5);
-    d_equ[7] = 0.02777777777 * local_density * (1.0 + u[7] * 3.0
-		             + (u[7] * u[7]) * 4.5
-		             - u_sq * 1.5);
-    d_equ[8] = 0.02777777777 * local_density * (1.0 + u[8] * 3.0
-		             + (u[8] * u[8]) * 4.5
-		             - u_sq * 1.5);
-    /* relaxation step */
-    for(kk=0;kk<NSPEEDS;kk++) {
-      cells[ii].speeds[kk] = (tmp_cells[ii].speeds[kk]
-			             + params.omega * 
-			             (d_equ[kk] - tmp_cells[ii].speeds[kk]));
-    }
-    } else {
-    /* called after propagate, so taking values from scratch space
-    ** mirroring, and writing into main grid */
-    cells[ii].speeds[1] = tmp_cells[ii].speeds[3];
-    cells[ii].speeds[2] = tmp_cells[ii].speeds[4];
-    cells[ii].speeds[3] = tmp_cells[ii].speeds[1];
-    cells[ii].speeds[4] = tmp_cells[ii].speeds[2];
-    cells[ii].speeds[5] = tmp_cells[ii].speeds[7];
-    cells[ii].speeds[6] = tmp_cells[ii].speeds[8];
-    cells[ii].speeds[7] = tmp_cells[ii].speeds[5];
-    cells[ii].speeds[8] = tmp_cells[ii].speeds[6];
-    }
-  }
+	// Get number of processes.
+	MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-  return tot_u / (float)tot_cells;
+	// The number of cells assigned to each process;
+	int piece = (params.nx*params.ny)/size;
+
+	// Master = size-1
+	// Workers 0 -> size-2
+
+	// Determine rank of current process
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+	if(rank < size-1) {
+		//for(ii=0;ii<params.ny*params.nx;ii++) {
+		for(ii=rank*piece; ii<(rank+1)*piece; ii++)
+			/* don't consider occupied cells */
+			if(!obstacles[ii]) {
+				/* compute local density total */
+				float local_density = 0.0;
+				for(kk=0;kk<NSPEEDS;kk++) {
+					local_density += tmp_cells[ii].speeds[kk];
+				}
+				/* compute x velocity component */
+				float u_x = (tmp_cells[ii].speeds[1] + 
+				       tmp_cells[ii].speeds[5] + 
+				       tmp_cells[ii].speeds[8]
+				       - (tmp_cells[ii].speeds[3] + 
+				      tmp_cells[ii].speeds[6] + 
+				      tmp_cells[ii].speeds[7]))
+				  / local_density;
+				/* compute y velocity component */
+				float u_y = (tmp_cells[ii].speeds[2] + 
+				       tmp_cells[ii].speeds[5] + 
+				       tmp_cells[ii].speeds[6]
+				       - (tmp_cells[ii].speeds[4] + 
+				      tmp_cells[ii].speeds[7] + 
+				      tmp_cells[ii].speeds[8]))
+				  / local_density;
+				  
+				/* accumulate the norm of x- and y- velocity components */
+				tot_u += sqrt((u_x * u_x) + (u_y * u_y));
+				/* increase counter of inspected cells */
+				++tot_cells;
+
+				/* velocity squared */ 
+				float u_sq = u_x * u_x + u_y * u_y;
+				/* directional velocity components */
+				u[1] =   u_x;        /* east */
+				u[2] =         u_y;  /* north */
+				u[3] = - u_x;        /* west */
+				u[4] =       - u_y;  /* south */
+				u[5] =   u_x + u_y;  /* north-east */
+				u[6] = - u_x + u_y;  /* north-west */
+				u[7] = - u_x - u_y;  /* south-west */
+				u[8] =   u_x - u_y;  /* south-east */
+				/* equilibrium densities */
+
+				// 1/(2.0 * c_sq * c_sq) = 4.5
+				// 1/c_sq = 3.0
+				// 1/(2.0 * c_sq) = 1.5
+				// w0 = 0.44444444444
+				// w1 = 0.11111111111
+				// w2 = 0.02777777777
+
+				/* zero velocity density: weight w0 */
+				d_equ[0] = 0.44444444444 * local_density * (1.0 - u_sq * 1.5);
+				/* axis speeds: weight w1 */
+				d_equ[1] = 0.11111111111 * local_density * (1.0 + u[1] * 3.0
+					             + (u[1] * u[1]) * 4.5
+					             - u_sq * 1.5);
+				d_equ[2] = 0.11111111111 * local_density * (1.0 + u[2] * 3.0
+					             + (u[2] * u[2]) * 4.5
+					             - u_sq * 1.5);
+				d_equ[3] = 0.11111111111 * local_density * (1.0 + u[3] * 3.0
+					             + (u[3] * u[3]) * 4.5
+					             - u_sq * 1.5);
+				d_equ[4] = 0.11111111111 * local_density * (1.0 + u[4] * 3.0
+					             + (u[4] * u[4]) * 4.5
+					             - u_sq * 1.5);
+				/* diagonal speeds: weight w2 */
+				d_equ[5] = 0.02777777777 * local_density * (1.0 + u[5] * 3.0
+					             + (u[5] * u[5]) * 4.5
+					             - u_sq * 1.5);
+				d_equ[6] = 0.02777777777 * local_density * (1.0 + u[6] * 3.0
+					             + (u[6] * u[6]) * 4.5
+					             - u_sq * 1.5);
+				d_equ[7] = 0.02777777777 * local_density * (1.0 + u[7] * 3.0
+					             + (u[7] * u[7]) * 4.5
+					             - u_sq * 1.5);
+				d_equ[8] = 0.02777777777 * local_density * (1.0 + u[8] * 3.0
+					             + (u[8] * u[8]) * 4.5
+					             - u_sq * 1.5);
+				/* relaxation step */
+				for(kk=0;kk<NSPEEDS;kk++) {
+					cells[ii].speeds[kk] = (tmp_cells[ii].speeds[kk]
+						             + params.omega * 
+						             (d_equ[kk] - tmp_cells[ii].speeds[kk]));
+				}
+			} else {
+				/* called after propagate, so taking values from scratch space
+				** mirroring, and writing into main grid */
+				cells[ii].speeds[1] = tmp_cells[ii].speeds[3];
+				cells[ii].speeds[2] = tmp_cells[ii].speeds[4];
+				cells[ii].speeds[3] = tmp_cells[ii].speeds[1];
+				cells[ii].speeds[4] = tmp_cells[ii].speeds[2];
+				cells[ii].speeds[5] = tmp_cells[ii].speeds[7];
+				cells[ii].speeds[6] = tmp_cells[ii].speeds[8];
+				cells[ii].speeds[7] = tmp_cells[ii].speeds[5];
+				cells[ii].speeds[8] = tmp_cells[ii].speeds[6];
+			}
+		}
+	}
+
+	if(rank < size-1) {
+		// Send tot_u and tot_cells
+		// tot_u tag = 1
+		MPI_Send(&tot_u, 1, MPI_FLOAT, size-1, 1, MPI_COMM_WORLD);
+		// tot_cells tag = 2
+		MPI_Send(&tot_cells, 1, MPI_INT, size-1, 2, MPI_COMM_WORLD);
+
+	} else {
+		// Receive tot_u and tot_cells
+		// Compute total and return
+		float temp_u = 0;
+		int temp_cells = 0;
+		int i;
+
+		// Receive tot_u
+		for(i=0; i<size-1; i++) {
+			MPI_Recv(&temp_u, 1, MPI_FLOAT, MPI_ANY_SOURCE, 1, MPI_COMM_WORLD, &status);
+			tot_u += temp_u;
+		}
+		// Receive tot_cells
+		for(i=0; i<size-1; i++) {
+			MPI_Recv(&temp_cells, 1, MPI_INT, MPI_ANY_SOURCE, 1, MPI_COMM_WORLD, &status);
+			tot_cells += temp_cells;
+		}
+
+		return tot_u / (float)tot_cells;
+	}
 }
 
 int initialise(const char* paramfile, const char* obstaclefile,

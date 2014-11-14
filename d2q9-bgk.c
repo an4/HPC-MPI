@@ -187,6 +187,11 @@ int main(int argc, char* argv[])
 	// Finalize MPI environment.
 	MPI_Finalize();
 
+	MPI_Finalized(&flag);
+	if(flag != 1) {
+		MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
+	}
+
 	/* write final values and free memory */
 	printf("==done==\n");
 	printf("Reynolds number:\t\t%.12E\n",calc_reynolds(params,cells,obstacles));

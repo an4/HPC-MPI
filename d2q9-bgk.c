@@ -184,6 +184,17 @@ int main(int argc, char* argv[])
 	timstr=ru.ru_stime;        
 	systim=timstr.tv_sec+(timstr.tv_usec/1000000.0);
 
+	if(rank == 0) {
+		/* write final values and free memory */
+		printf("==done==\n");
+		printf("Reynolds number:\t\t%.12E\n",calc_reynolds(params,cells,obstacles));
+		printf("Elapsed time:\t\t\t%.6lf (s)\n", toc-tic);
+		printf("Elapsed user CPU time:\t\t%.6lf (s)\n", usrtim);
+		printf("Elapsed system CPU time:\t%.6lf (s)\n", systim);
+		write_values(params,cells,obstacles,av_vels);
+		finalise(&params, &cells, &tmp_cells, &obstacles, &av_vels);
+	}
+
 	// Finalize MPI environment.
 	MPI_Finalize();
 
@@ -191,15 +202,6 @@ int main(int argc, char* argv[])
 	if(flag != 1) {
 		MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
 	}
-
-	/* write final values and free memory */
-	printf("==done==\n");
-	printf("Reynolds number:\t\t%.12E\n",calc_reynolds(params,cells,obstacles));
-	printf("Elapsed time:\t\t\t%.6lf (s)\n", toc-tic);
-	printf("Elapsed user CPU time:\t\t%.6lf (s)\n", usrtim);
-	printf("Elapsed system CPU time:\t%.6lf (s)\n", systim);
-	write_values(params,cells,obstacles,av_vels);
-	finalise(&params, &cells, &tmp_cells, &obstacles, &av_vels);
 
 	return EXIT_SUCCESS;
 }
@@ -474,28 +476,15 @@ int collision(const t_param params, t_speed* cells, t_speed* tmp_cells, int* obs
 		}
 	}
 
-	if(rank < size-1) {
-		// Send tot_u and tot_cells
-		// tot_u
-		MPI_Send(&tot_u, 1, MPI_FLOAT, size-1, index, MPI_COMM_WORLD);
-		// tot_cells
-		MPI_Send(&tot_cells, 1, MPI_INT, size-1, index+params.maxIters, MPI_COMM_WORLD);
-	} else {
-		// Receive tot_u and tot_cells
-		float temp_u = 0;
-		int temp_cells = 0;
-		int i;
-		
-		for(i=0; i<size-1; i++) {
-			// Receive tot_u
-			MPI_Recv(&temp_u, 1, MPI_FLOAT, MPI_ANY_SOURCE, index, MPI_COMM_WORLD, &status);
-			tot_u += temp_u;
-			// Receive tot_cells
-			MPI_Recv(&temp_cells, 1, MPI_INT, MPI_ANY_SOURCE, index+params.maxIters, MPI_COMM_WORLD, &status);
-			tot_cells += temp_cells;
-		}
+	float total_u = 0.0;
+	int total_cells = 0;
 
-		av_vels[index] = tot_u / (float)tot_cells;
+	MPI_Reduce(&tot_u, &total_u, 1, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD);
+	MPI_Reduce(&tot_cells, &total_cells, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
+
+	if(rank == 0) {
+		printf("I:%d\t\t%f %d\n",index+1,total_u,total_cells);
+		av_vels[index] = total_u / (float)total_cells;
 	}
 	return EXIT_SUCCESS;
 }

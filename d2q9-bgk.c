@@ -292,6 +292,8 @@ int accelerate_flow(const t_param params, t_speed* cells, int* obstacles, int in
             MPI_Recv(&from_up, buffer_size, MPI_FLOAT, up, 2, MPI_COMM_WORLD, &status);
             // receive from down
             MPI_Recv(&from_down, buffer_size, MPI_FLOAT, down, 1, MPI_COMM_WORLD, &status);
+
+            printf("Even\n");
         } else {
             // receive from up
             MPI_Recv(&from_up, buffer_size, MPI_FLOAT, up, 2, MPI_COMM_WORLD, &status);
@@ -301,7 +303,11 @@ int accelerate_flow(const t_param params, t_speed* cells, int* obstacles, int in
             MPI_Send(&to_up, buffer_size, MPI_FLOAT, up, 2, MPI_COMM_WORLD);
             // send down
             MPI_Send(&to_down, buffer_size, MPI_FLOAT, down, 1, MPI_COMM_WORLD);
+            
+            printf("Odd\n");
         }
+
+        printf("Sends and receive\n");
 
         // Copy received values into cells.
         if(rank == 0) {
@@ -339,6 +345,16 @@ int accelerate_flow(const t_param params, t_speed* cells, int* obstacles, int in
                 cells[start-params.nx+ii].speeds[6] = from_down[ii*3+2];
             }
         }
+
+        free(*from_up);
+        free(*from_down);
+        free(*to_up);
+        free(*to_down);
+
+        *from_up = NULL;
+        *from_down = NULL;
+        *to_up = NULL;
+        *to_down = NULL;
 
     }
 

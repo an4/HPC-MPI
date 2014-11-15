@@ -490,7 +490,7 @@ int collision(const t_param params, t_speed* cells, t_speed* tmp_cells, int* obs
 		av_vels[index] = total_u / (float)total_cells;
 		return EXIT_SUCCESS;
 	} else {
-		MPI_Send(&tot_u, 1, MPI_FLOAT, 0, index, MPI_COMM_WORLD);
+		MPI_Send(&tot_u, 1, MPI_FLOAT, 0, index, MPI_COMM_WORLD, &status);
 	}
 }
 

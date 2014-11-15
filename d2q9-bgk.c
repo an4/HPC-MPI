@@ -484,6 +484,7 @@ int collision(const t_param params, t_speed* cells, t_speed* tmp_cells, int* obs
 		for(i=1; i<size;i++) {
 			float temp_u = 0.0;
 			MPI_Recv(&temp_u, 1, MPI_FLOAT, i, index, MPI_COMM_WORLD, &status);
+			total_u += temp_u;
 		}
 
 		printf("I:%d\t\t%f %d\n",index+1,total_u,total_cells);

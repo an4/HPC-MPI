@@ -288,17 +288,18 @@ int accelerate_flow(const t_param params, t_speed* cells, int* obstacles, int in
             MPI_Send(&to_up, buffer_size, MPI_FLOAT, up, 2, MPI_COMM_WORLD);
             // send down
             MPI_Send(&to_down, buffer_size, MPI_FLOAT, down, 1, MPI_COMM_WORLD);
-            // receive from up
-            MPI_Recv(&from_up, buffer_size, MPI_FLOAT, up, 2, MPI_COMM_WORLD, &status);
             // receive from down
-            MPI_Recv(&from_down, buffer_size, MPI_FLOAT, down, 1, MPI_COMM_WORLD, &status);
+            MPI_Recv(&from_down, buffer_size, MPI_FLOAT, down, 2, MPI_COMM_WORLD, &status);
+            // receive from up
+            MPI_Recv(&from_up, buffer_size, MPI_FLOAT, up, 1, MPI_COMM_WORLD, &status);
+            
 
             printf("Even\n");
         } else {
-            // receive from up
-            MPI_Recv(&from_up, buffer_size, MPI_FLOAT, up, 2, MPI_COMM_WORLD, &status);
             // receive from down
-            MPI_Recv(&from_down, buffer_size, MPI_FLOAT, down, 1, MPI_COMM_WORLD, &status);
+            MPI_Recv(&from_down, buffer_size, MPI_FLOAT, down, 2, MPI_COMM_WORLD, &status);
+            // receive from up
+            MPI_Recv(&from_up, buffer_size, MPI_FLOAT, up, 1, MPI_COMM_WORLD, &status);
             // send up
             MPI_Send(&to_up, buffer_size, MPI_FLOAT, up, 2, MPI_COMM_WORLD);
             // send down

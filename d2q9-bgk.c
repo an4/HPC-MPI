@@ -184,17 +184,6 @@ int main(int argc, char* argv[])
 	timstr=ru.ru_stime;        
 	systim=timstr.tv_sec+(timstr.tv_usec/1000000.0);
 
-	if(rank == 0) {
-		/* write final values and free memory */
-		printf("==done==\n");
-		printf("Reynolds number:\t\t%.12E\n",calc_reynolds(params,cells,obstacles));
-		printf("Elapsed time:\t\t\t%.6lf (s)\n", toc-tic);
-		printf("Elapsed user CPU time:\t\t%.6lf (s)\n", usrtim);
-		printf("Elapsed system CPU time:\t%.6lf (s)\n", systim);
-		write_values(params,cells,obstacles,av_vels);
-		finalise(&params, &cells, &tmp_cells, &obstacles, &av_vels);
-	}
-
 	// Finalize MPI environment.
 	MPI_Finalize();
 
@@ -202,6 +191,15 @@ int main(int argc, char* argv[])
 	if(flag != 1) {
 		MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
 	}
+
+	/* write final values and free memory */
+	printf("==done==\n");
+	printf("Reynolds number:\t\t%.12E\n",calc_reynolds(params,cells,obstacles));
+	printf("Elapsed time:\t\t\t%.6lf (s)\n", toc-tic);
+	printf("Elapsed user CPU time:\t\t%.6lf (s)\n", usrtim);
+	printf("Elapsed system CPU time:\t%.6lf (s)\n", systim);
+	write_values(params,cells,obstacles,av_vels);
+	finalise(&params, &cells, &tmp_cells, &obstacles, &av_vels);
 
 	return EXIT_SUCCESS;
 }
@@ -476,17 +474,24 @@ int collision(const t_param params, t_speed* cells, t_speed* tmp_cells, int* obs
 		}
 	}
 
-	float total_u = 0.0;
 	int total_cells = 0;
-
-	MPI_Reduce(&tot_u, &total_u, 1, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD);
 	MPI_Reduce(&tot_cells, &total_cells, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
 
 	if(rank == 0) {
+
+		float total_u = tot_u;
+		int i;
+		for(i=1; i<size;i++) {
+			float temp_u = 0.0;
+			MPI_Recv(&temp_u, 1, MPI_FLOAT, i, index, MPI_COMM_WORLD);
+		}
+
 		printf("I:%d\t\t%f %d\n",index+1,total_u,total_cells);
 		av_vels[index] = total_u / (float)total_cells;
+		return EXIT_SUCCESS;
+	} else {
+		MPI_Send(&tot_u, 1, MPI_FLOAT, 0, index, MPI_COMM_WORLD);
 	}
-	return EXIT_SUCCESS;
 }
 
 int initialise(const char* paramfile, const char* obstaclefile,

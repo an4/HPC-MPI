@@ -1,0 +1,69 @@
+#!/bin/bash
+#
+# This script is for verifying submissions from the COMS30004 Lattice
+# Boltzmann coursework. This script should be run from a directory
+# containing the files that have (or will) be submitted.
+#
+# This script will create a temorary directory and copy the submission
+# files into it. It will then unload all modules apart from the
+# defaults, and source 'env.sh' (if present). Finally, it will run
+# 'make', and check that there is an executable with the correct name.
+#
+
+EXE=d2q9-bgk.exe
+ENV=env.sh
+
+echo
+
+echo "Unloading all modules"
+module list -t 2>.MODULES
+while read MODULE
+do
+    module unload $MODULE 2>/dev/null
+done < <(cat .MODULES | tail -n +2)
+
+echo "Loading default modules"
+module load shared default-environment
+module load openmpi/gcc/64/1.6.5
+module load cuda50/toolkit/5.0.35
+
+if [ -r $ENV ]
+then
+    echo "Sourcing $ENV"
+    source $ENV
+else
+    echo "No $ENV present, skipping"
+fi
+
+echo
+module list
+echo
+
+rm -f $EXE
+echo "Running 'make'"
+if [ ! -r Makefile ]
+then
+    echo
+    echo "ERROR: Makefile not found."
+    echo
+elif ! make -B;
+then
+    echo
+    echo "ERROR: Build failed - are you missing some extra modules from $ENV?"
+    echo
+elif [ ! -r $EXE ]
+then
+    echo
+    echo "ERROR: Executable '$EXE' is not present."
+    echo
+else
+    echo
+    echo "Submission check passed."
+    echo
+    echo "Please ensure that you submit all files with correct names:"
+    echo " - d2q9-bgk.c (and any other source files)"
+    echo " - Makefile"
+    echo " - env.sh (if needed)"
+    echo " - report.pdf"
+    echo
+fi

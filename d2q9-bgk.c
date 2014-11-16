@@ -193,15 +193,17 @@ int main(int argc, char* argv[])
         MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
     }
 
-    /* write final values and free memory */
-    printf("==done==\n");
-    printf("Reynolds number:\t\t%.12E\n",calc_reynolds(params,cells,obstacles));
-    printf("Elapsed time:\t\t\t%.6lf (s)\n", toc-tic);
-    printf("Elapsed user CPU time:\t\t%.6lf (s)\n", usrtim);
-    printf("Elapsed system CPU time:\t%.6lf (s)\n", systim);
-    write_values(params,cells,obstacles,av_vels);
-    finalise(&params, &cells, &tmp_cells, &obstacles, &av_vels);
-
+    if(rank == 0) {
+        /* write final values and free memory */
+        printf("==done==\n");
+        printf("Reynolds number:\t\t%.12E\n",calc_reynolds(params,cells,obstacles));
+        printf("Elapsed time:\t\t\t%.6lf (s)\n", toc-tic);
+        printf("Elapsed user CPU time:\t\t%.6lf (s)\n", usrtim);
+        printf("Elapsed system CPU time:\t%.6lf (s)\n", systim);
+        write_values(params,cells,obstacles,av_vels);
+        finalise(&params, &cells, &tmp_cells, &obstacles, &av_vels);
+    }
+    
     return EXIT_SUCCESS;
 }
 
@@ -654,7 +656,7 @@ int collision(const t_param params, t_speed* cells, t_speed* tmp_cells, int* obs
     MPI_Reduce(&tot_u, &total_u, 1, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD);
 
     if(rank == 0) {
-        printf("%d\t%f %d\n",index,total_u,total_cells);
+        //printf("%d\t%f %d\n",index,total_u,total_cells);
         av_vels[index] = total_u / (float)total_cells;
     }
 

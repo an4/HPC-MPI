@@ -108,7 +108,7 @@ float total_density(const t_param params, t_speed* cells);
 float av_velocity(const t_param params, t_speed* cells, int* obstacles);
 
 /* calculate Reynolds number */
-float calc_reynolds(const t_param params, t_speed* cells, int* obstacles);
+float calc_reynolds(const t_param params, t_speed* cells, int* obstacles, float final_average_velocity);
 
 /* utility functions */
 void die(const char* message, const int line, const char *file);
@@ -196,7 +196,7 @@ int main(int argc, char* argv[])
     if(rank == 0) {
         /* write final values and free memory */
         printf("==done==\n");
-        printf("Reynolds number:\t\t%.12E\n",calc_reynolds(params,cells,obstacles));
+        printf("Reynolds number:\t\t%.12E\n",calc_reynolds(params,cells,obstacles,av_vels[maxIters-1]));
         printf("Elapsed time:\t\t\t%.6lf (s)\n", toc-tic);
         printf("Elapsed user CPU time:\t\t%.6lf (s)\n", usrtim);
         printf("Elapsed system CPU time:\t%.6lf (s)\n", systim);
@@ -868,11 +868,11 @@ float av_velocity(const t_param params, t_speed* cells, int* obstacles)
   return tot_u / (float)tot_cells;
 }
 
-float calc_reynolds(const t_param params, t_speed* cells, int* obstacles)
+float calc_reynolds(const t_param params, t_speed* cells, int* obstacles, float final_average_velocity)
 {
   const float viscosity = 1.0 / 6.0 * (2.0 / params.omega - 1.0);
   
-  return av_velocity(params,cells,obstacles) * params.reynolds_dim / viscosity;
+  return final_average_velocity * params.reynolds_dim / viscosity;
 }
 
 float total_density(const t_param params, t_speed* cells)

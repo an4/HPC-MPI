@@ -654,6 +654,7 @@ int collision(const t_param params, t_speed* cells, t_speed* tmp_cells, int* obs
     MPI_Reduce(&tot_u, &total_cells, 1, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD);
 
     if(rank == 0) {
+        printf("%d\t%f %d\n",index,total_u,total_cells);
         av_vels[index] = total_u / (float)total_cells;
     }
 

@@ -196,7 +196,7 @@ int main(int argc, char* argv[])
     if(rank == 0) {
         /* write final values and free memory */
         printf("==done==\n");
-        printf("Reynolds number:\t\t%.12E\n",calc_reynolds(params,cells,obstacles,av_vels[maxIters-1]));
+        printf("Reynolds number:\t\t%.12E\n",calc_reynolds(params,cells,obstacles,av_vels[params.maxIters-1]));
         printf("Elapsed time:\t\t\t%.6lf (s)\n", toc-tic);
         printf("Elapsed user CPU time:\t\t%.6lf (s)\n", usrtim);
         printf("Elapsed system CPU time:\t%.6lf (s)\n", systim);

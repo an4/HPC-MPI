@@ -218,6 +218,8 @@ int main(int argc, char* argv[])
                 cells[ii*piece+jj].speeds[8] = buffer[9*jj+8];
             }
         }
+        free(buffer);
+        buffer = NULL;
     }
 
     // Finalize MPI environment.
@@ -324,45 +326,22 @@ int accelerate_flow(const t_param params, t_speed* cells, int* obstacles, int in
         if(rank % 2 == 0) {
             // send up
             MPI_Ssend(to_up, buffer_size, MPI_FLOAT, up, 2, MPI_COMM_WORLD);
-
-            //printf("1Rank %d sends to %d\n",rank, up);
-
             // send down
             MPI_Ssend(to_down, buffer_size, MPI_FLOAT, down, 1, MPI_COMM_WORLD);
-
-            //printf("2Rank %d sends to %d\n",rank, down);
-
             // receive from down
             MPI_Recv(from_down, buffer_size, MPI_FLOAT, down, 2, MPI_COMM_WORLD, &status);
-
-            //printf("3Rank %d receives from %d\n",rank, down);
-
             // receive from up
             MPI_Recv(from_up, buffer_size, MPI_FLOAT, up, 1, MPI_COMM_WORLD, &status);
-            
-            //printf("4Rank %d receives from %d\n",rank, up);
-
         } 
         if(rank % 2 == 1){
             // receive from down
             MPI_Recv(from_down, buffer_size, MPI_FLOAT, down, 2, MPI_COMM_WORLD, &status);
-
-            //printf("1Rank %d receives from %d\n",rank, down);
-
             // receive from up
             MPI_Recv(from_up, buffer_size, MPI_FLOAT, up, 1, MPI_COMM_WORLD, &status);
-
-            //printf("2Rank %d receives from %d\n",rank, up);
-
             // send up
             MPI_Ssend(to_up, buffer_size, MPI_FLOAT, up, 2, MPI_COMM_WORLD);
-
-            //printf("3Rank %d sends to %d\n",rank, up);
-
             // send down
             MPI_Ssend(to_down, buffer_size, MPI_FLOAT, down, 1, MPI_COMM_WORLD);
-            
-            //printf("4Rank %d sends to %d\n",rank, down);
         }
 
         // Copy received values into cells.
@@ -691,7 +670,6 @@ int collision(const t_param params, t_speed* cells, t_speed* tmp_cells, int* obs
     MPI_Reduce(&tot_u, &total_u, 1, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD);
 
     if(rank == 0) {
-        //printf("%d\t%f %d\n",index,total_u,total_cells);
         av_vels[index] = total_u / (float)total_cells;
     }
 

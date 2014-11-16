@@ -283,46 +283,48 @@ int accelerate_flow(const t_param params, t_speed* cells, int* obstacles, int in
         // Even ranks send then receive.
         // Odd ranks receive then send.
         if(rank % 2 == 0) {
-            // send up
-            MPI_Ssend(&to_up, buffer_size, MPI_FLOAT, up, 2, MPI_COMM_WORLD);
+            printf("%d even\n",rank);
+            // // send up
+            // MPI_Ssend(&to_up, buffer_size, MPI_FLOAT, up, 2, MPI_COMM_WORLD);
 
-            printf("1Rank %d sends to %d\n",rank, up);
+            // printf("1Rank %d sends to %d\n",rank, up);
 
-            // send down
-            MPI_Ssend(&to_down, buffer_size, MPI_FLOAT, down, 1, MPI_COMM_WORLD);
+            // // send down
+            // MPI_Ssend(&to_down, buffer_size, MPI_FLOAT, down, 1, MPI_COMM_WORLD);
 
-            printf("2Rank %d sends to %d\n",rank, down);
+            // printf("2Rank %d sends to %d\n",rank, down);
 
-            // receive from down
-            MPI_Recv(&from_down, buffer_size, MPI_FLOAT, down, 2, MPI_COMM_WORLD, &status);
+            // // receive from down
+            // MPI_Recv(&from_down, buffer_size, MPI_FLOAT, down, 2, MPI_COMM_WORLD, &status);
 
-            printf("3Rank %d receives from %d\n",rank, down);
+            // printf("3Rank %d receives from %d\n",rank, down);
 
-            // receive from up
-            MPI_Recv(&from_up, buffer_size, MPI_FLOAT, up, 1, MPI_COMM_WORLD, &status);
+            // // receive from up
+            // MPI_Recv(&from_up, buffer_size, MPI_FLOAT, up, 1, MPI_COMM_WORLD, &status);
             
-            printf("4Rank %d receives from %d\n",rank, up);
+            // printf("4Rank %d receives from %d\n",rank, up);
 
         } else {
-            // receive from down
-            MPI_Recv(&from_down, buffer_size, MPI_FLOAT, down, 2, MPI_COMM_WORLD, &status);
+            printf("%d odd\n",rank);
+            // // receive from down
+            // MPI_Recv(&from_down, buffer_size, MPI_FLOAT, down, 2, MPI_COMM_WORLD, &status);
 
-            printf("1Rank %d receives from %d\n",rank, down);
+            // printf("1Rank %d receives from %d\n",rank, down);
 
-            // receive from up
-            MPI_Recv(&from_up, buffer_size, MPI_FLOAT, up, 1, MPI_COMM_WORLD, &status);
+            // // receive from up
+            // MPI_Recv(&from_up, buffer_size, MPI_FLOAT, up, 1, MPI_COMM_WORLD, &status);
 
-            printf("2Rank %d receives from %d\n",rank, up);
+            // printf("2Rank %d receives from %d\n",rank, up);
 
-            // send up
-            MPI_Ssend(&to_up, buffer_size, MPI_FLOAT, up, 2, MPI_COMM_WORLD);
+            // // send up
+            // MPI_Ssend(&to_up, buffer_size, MPI_FLOAT, up, 2, MPI_COMM_WORLD);
 
-            printf("3Rank %d sends to %d\n",rank, up);
+            // printf("3Rank %d sends to %d\n",rank, up);
 
-            // send down
-            MPI_Ssend(&to_down, buffer_size, MPI_FLOAT, down, 1, MPI_COMM_WORLD);
+            // // send down
+            // MPI_Ssend(&to_down, buffer_size, MPI_FLOAT, down, 1, MPI_COMM_WORLD);
             
-            printf("4Rank %d sends to %d\n",rank, down);
+            // printf("4Rank %d sends to %d\n",rank, down);
         }
 
         // Copy received values into cells.

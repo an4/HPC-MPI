@@ -435,7 +435,7 @@ int propagate(const t_param params, t_speed* cells, t_speed* tmp_cells)
         tmp_cells[params.nx-1].speeds[8] = cells[2*params.nx-2].speeds[8];
 
         // First row
-        for(ii=1;ii<params.ny-1;ii++) {
+        for(ii=1;ii<params.nx-1;ii++) {
             tmp_cells[ii].speeds[0] = cells[ii].speeds[0];
             tmp_cells[ii].speeds[1] = cells[ii-1].speeds[1];
             tmp_cells[ii].speeds[2] = cells[params.nx*(params.ny-1)+ii].speeds[2];

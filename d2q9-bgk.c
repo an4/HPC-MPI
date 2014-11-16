@@ -203,7 +203,7 @@ int main(int argc, char* argv[])
         MPI_Ssend(buffer, 9*piece, MPI_FLOAT, 0, 3, MPI_COMM_WORLD);
     } else {
         MPI_Status status;
-        for(ii=0;ii<size;ii++) {
+        for(ii=1;ii<size;ii++) {
             MPI_Recv(buffer, 9*piece, MPI_FLOAT, ii, 3, MPI_COMM_WORLD, &status);
             int jj;
             for(jj=0;jj<piece;jj++) {

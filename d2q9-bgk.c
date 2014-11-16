@@ -186,20 +186,36 @@ int main(int argc, char* argv[])
     systim=timstr.tv_sec+(timstr.tv_usec/1000000.0);
 
     int piece = params.nx*params.ny/size;
-    float* buffer = malloc(piece * sizeof(float));
+    float* buffer = malloc(piece * 9 * sizeof(float));
 
     if(rank != 0) {
         for(ii=0;ii<piece;ii++) {
-            buffer[ii] = cells[piece*rank+ii];
+            buffer[9*ii]   = cells[piece*rank+ii].speeds[0];
+            buffer[9*ii+1] = cells[piece*rank+ii].speeds[1];
+            buffer[9*ii+2] = cells[piece*rank+ii].speeds[2];
+            buffer[9*ii+3] = cells[piece*rank+ii].speeds[3];
+            buffer[9*ii+4] = cells[piece*rank+ii].speeds[4];
+            buffer[9*ii+5] = cells[piece*rank+ii].speeds[5];
+            buffer[9*ii+6] = cells[piece*rank+ii].speeds[6];
+            buffer[9*ii+7] = cells[piece*rank+ii].speeds[7];
+            buffer[9*ii+8] = cells[piece*rank+ii].speeds[8];
         }
-        MPI_Ssend(buffer, piece, MPI_FLOAT, 0, 3, MPI_COMM_WORLD);
+        MPI_Ssend(buffer, 9*piece, MPI_FLOAT, 0, 3, MPI_COMM_WORLD);
     } else {
         MPI_Status status;
         for(ii=0;ii<size;ii++) {
-            MPI_Recv(buffer, piece, MPI_FLOAT, ii, 3, MPI_COMM_WORLD, &status);
+            MPI_Recv(buffer, 9*piece, MPI_FLOAT, ii, 3, MPI_COMM_WORLD, &status);
             int jj;
             for(jj=0;jj<piece;jj++) {
-                cells[ii*piece+jj] = buffer[jj];
+                cells[ii*piece+jj].speeds[0] = buffer[9*jj];
+                cells[ii*piece+jj].speeds[1] = buffer[9*jj+1];
+                cells[ii*piece+jj].speeds[2] = buffer[9*jj+2];
+                cells[ii*piece+jj].speeds[3] = buffer[9*jj+3];
+                cells[ii*piece+jj].speeds[4] = buffer[9*jj+4];
+                cells[ii*piece+jj].speeds[5] = buffer[9*jj+5];
+                cells[ii*piece+jj].speeds[6] = buffer[9*jj+6];
+                cells[ii*piece+jj].speeds[7] = buffer[9*jj+7];
+                cells[ii*piece+jj].speeds[8] = buffer[9*jj+8];
             }
         }
     }

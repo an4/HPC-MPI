@@ -237,20 +237,21 @@ int accelerate_flow(const t_param params, t_speed* cells, int* obstacles, int in
         MPI_Comm_rank(MPI_COMM_WORLD, &rank);
         MPI_Comm_size(MPI_COMM_WORLD, &size);
         piece = params.nx*params.ny/size;
-        // // Compute senders and receivers.
-        // if(rank == 0) {
-        //     up = 1;
-        //     down = size-1;
-        // } else if(rank == size-1) {
-        //     up = 0;
-        //     down = size-2;
-        // } else {
-        //     up = rank+1;
-        //     down = rank-1;
-        // }
 
-        up = (rank+1)%size;
-        down = (rank-1)%size;
+        // Compute senders and receivers.
+        if(rank == 0) {
+            up = 1;
+            down = size-1;
+        } else if(rank == size-1) {
+            up = 0;
+            down = size-2;
+        } else {
+            up = rank+1;
+            down = rank-1;
+        }
+
+        // up = (rank+1)%size;
+        // down = (rank-1)%size;
 
         int buffer_size = 3 * params.nx;
 
@@ -283,12 +284,12 @@ int accelerate_flow(const t_param params, t_speed* cells, int* obstacles, int in
         // Odd ranks receive then send.
         if(rank % 2 == 0) {
             // send up
-            MPI_Send(&to_up, buffer_size, MPI_FLOAT, up, 2, MPI_COMM_WORLD);
+            MPI_Ssend(&to_up, buffer_size, MPI_FLOAT, up, 2, MPI_COMM_WORLD);
 
             printf("Rank %d sends to %d\n",rank, up);
 
             // send down
-            MPI_Send(&to_down, buffer_size, MPI_FLOAT, down, 1, MPI_COMM_WORLD);
+            MPI_Ssend(&to_down, buffer_size, MPI_FLOAT, down, 1, MPI_COMM_WORLD);
 
             printf("Rank %d sends to %d\n",rank, down);
 
@@ -314,12 +315,12 @@ int accelerate_flow(const t_param params, t_speed* cells, int* obstacles, int in
             printf("Rank %d receives from %d\n",rank, up);
 
             // send up
-            MPI_Send(&to_up, buffer_size, MPI_FLOAT, up, 2, MPI_COMM_WORLD);
+            MPI_Ssend(&to_up, buffer_size, MPI_FLOAT, up, 2, MPI_COMM_WORLD);
 
             printf("Rank %d sends to %d\n",rank, up);
 
             // send down
-            MPI_Send(&to_down, buffer_size, MPI_FLOAT, down, 1, MPI_COMM_WORLD);
+            MPI_Ssend(&to_down, buffer_size, MPI_FLOAT, down, 1, MPI_COMM_WORLD);
             
             printf("Rank %d sends to %d\n",rank, down);
         }

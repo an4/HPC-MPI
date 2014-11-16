@@ -269,6 +269,8 @@ int accelerate_flow(const t_param params, t_speed* cells, int* obstacles, int in
         start = piece * rank;
         end = piece * (rank+1);
 
+        printf("Rank:%d  up:%d down:%d\n",rank,up,down);
+
         // Copy values to be sent.
         for(ii=0; ii<params.nx; ii++) {
             to_down[ii*3]    = cells[start+ii].speeds[4];

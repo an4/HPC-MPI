@@ -286,7 +286,7 @@ int accelerate_flow(const t_param params, t_speed* cells, int* obstacles, int in
         // Odd ranks receive then send.
         if(rank % 2 == 0) {
             // send up
-            MPI_Ssend(&to_up, buffer_size, MPI_FLOAT, up, 2, MPI_COMM_WORLD);
+            MPI_Ssend(to_up, buffer_size, MPI_FLOAT, up, 2, MPI_COMM_WORLD);
 
             printf("1Rank %d sends to %d\n",rank, up);
 
@@ -308,7 +308,7 @@ int accelerate_flow(const t_param params, t_speed* cells, int* obstacles, int in
         } 
         if(rank % 2 == 1){
             // receive from down
-            MPI_Recv(&from_down, buffer_size, MPI_FLOAT, down, 2, MPI_COMM_WORLD, &status);
+            MPI_Recv(from_down, buffer_size, MPI_FLOAT, down, 2, MPI_COMM_WORLD, &status);
 
             printf("1Rank %d receives from %d\n",rank, down);
 

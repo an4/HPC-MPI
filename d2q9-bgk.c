@@ -185,6 +185,25 @@ int main(int argc, char* argv[])
     timstr=ru.ru_stime;        
     systim=timstr.tv_sec+(timstr.tv_usec/1000000.0);
 
+    piece = params.nx*params.ny/size;
+    float* buffer = malloc(piece * sizeof(float));
+
+    if(rank != 0) {
+        for(ii=0;ii<piece;ii++) {
+            buffer[ii] = cells[piece*rank+ii];
+        }
+        MPI_Ssend(buffer, piece, MPI_FLOAT, 0, 3, MPI_COMM_WORLD);
+    } else {
+        MPI_Status status;
+        for(ii=0;ii<size;ii++) {
+            MPI_Recv(buffer, piece, MPI_FLOAT, ii, 0 , 3, MPI_COMM_WORLD, &status);
+            int jj;
+            for(jj=0;jj<piece;jj++) {
+                cells[ii*piece+jj] = buffer[jj];
+            }
+        }
+    }
+
     // Finalize MPI environment.
     MPI_Finalize();
 

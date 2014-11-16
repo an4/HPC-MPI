@@ -164,6 +164,8 @@ int main(int argc, char* argv[])
     tic=timstr.tv_sec+(timstr.tv_usec/1000000.0);
 
     for(ii=0;ii<params.maxIters;ii++) {
+        MPI_Barrier(MPI_COMM_WORLD);
+
         accelerate_flow(params,cells,obstacles, ii);
         propagate(params,cells,tmp_cells);
         collision(params,cells,tmp_cells,obstacles, av_vels, ii);   
@@ -303,7 +305,8 @@ int accelerate_flow(const t_param params, t_speed* cells, int* obstacles, int in
             
             // printf("4Rank %d receives from %d\n",rank, up);
 
-        } else {
+        } 
+        if(rank % 2 == 1){
             // receive from down
             MPI_Recv(&from_down, buffer_size, MPI_FLOAT, down, 2, MPI_COMM_WORLD, &status);
 

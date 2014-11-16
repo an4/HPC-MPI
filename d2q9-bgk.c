@@ -185,7 +185,7 @@ int main(int argc, char* argv[])
     timstr=ru.ru_stime;        
     systim=timstr.tv_sec+(timstr.tv_usec/1000000.0);
 
-    int piece = params.nx*params.ny/size;
+    int piece = (params.ny/size) * params.nx;
     float* buffer = malloc(piece * 9 * sizeof(float));
 
     if(rank != 0) {
@@ -277,7 +277,7 @@ int accelerate_flow(const t_param params, t_speed* cells, int* obstacles, int in
 
         MPI_Comm_rank(MPI_COMM_WORLD, &rank);
         MPI_Comm_size(MPI_COMM_WORLD, &size);
-        piece = params.nx*params.ny/size;
+        piece = (params.ny/size) * params.nx;
 
         // Compute senders and receivers.
         if(rank == 0) {
@@ -408,7 +408,7 @@ int propagate(const t_param params, t_speed* cells, t_speed* tmp_cells)
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     // Number of cells each assigned to each process.
-    piece = params.nx*params.ny/size;
+    piece = (params.ny/size) * params.nx;
 
     // First process gets first line.
     if(rank == 0) {
@@ -491,7 +491,7 @@ int propagate(const t_param params, t_speed* cells, t_speed* tmp_cells)
         end = piece*(rank+1);
     } else if(rank == size-1) {
         start = piece*rank;
-        end = piece*(rank+1)-1;
+        end = piece*(rank+1)-params.nx;
     } else {
         start = piece*rank;
         end = piece*(rank+1);
@@ -556,7 +556,7 @@ int collision(const t_param params, t_speed* cells, t_speed* tmp_cells, int* obs
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
     // The number of cells assigned to each process;
-    int piece = (params.nx*params.ny)/size;
+    int piece = (params.ny/size) * params.nx;
 
     // Master = size-1
 

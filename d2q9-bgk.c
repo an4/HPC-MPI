@@ -231,14 +231,13 @@ int accelerate_flow(const t_param params, t_speed* cells, int* obstacles, int in
     }
 
     if(index != 0) {
-        int rank, size, piece;
+        int rank, size, piece, up, down;
         MPI_Status status;  
 
         MPI_Comm_rank(MPI_COMM_WORLD, &rank);
         MPI_Comm_size(MPI_COMM_WORLD, &size);
         piece = params.nx*params.ny/size;
         // // Compute senders and receivers.
-        // int up, down;
         // if(rank == 0) {
         //     up = 1;
         //     down = size-1;

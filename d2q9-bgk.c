@@ -439,8 +439,6 @@ int propagate(const t_param params, t_speed* cells, t_speed* tmp_cells, int pack
     int rank;
     int start;
     int end;
-    int packet;
-    int last_packet;
 
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);

@@ -91,9 +91,9 @@ int initialise(const char* paramfile, const char* obstaclefile,
 ** timestep calls, in order, the functions:
 ** accelerate_flow(), propagate() & collision()
 */
-int accelerate_flow(const t_param params, t_speed* cells, int* obstacles, int index);
-int propagate(const t_param params, t_speed* cells, t_speed* tmp_cells);
-int collision(const t_param params, t_speed* cells, t_speed* tmp_cells, int* obstacles, float* av_vels, int index);
+int accelerate_flow(const t_param params, t_speed* cells, int* obstacles, int index, int packet, int last_packet);
+int propagate(const t_param params, t_speed* cells, t_speed* tmp_cells, int packet, int last_packet);
+int collision(const t_param params, t_speed* cells, t_speed* tmp_cells, int* obstacles, float* av_vels, int index, int packet, int last_packet);
 int write_values(const t_param params, t_speed* cells, int* obstacles, float* av_vels);
 
 /* finalise, including freeing up allocated memory */
@@ -156,6 +156,13 @@ int main(int argc, char* argv[])
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
+    int packet = (params.ny/size) * params.nx;
+    int last_packet = params.ny%size * params.nx;
+
+    if(last_packet != 0) {
+        packet += params.nx;
+    }
+
     /* iterate for maxIters timesteps */
     gettimeofday(&timstr,NULL);
     tic=timstr.tv_sec+(timstr.tv_usec/1000000.0);
@@ -163,9 +170,9 @@ int main(int argc, char* argv[])
     for(ii=0;ii<params.maxIters;ii++) {
         MPI_Barrier(MPI_COMM_WORLD);
 
-        accelerate_flow(params,cells,obstacles, ii);
-        propagate(params,cells,tmp_cells);
-        collision(params,cells,tmp_cells,obstacles, av_vels, ii);   
+        accelerate_flow(params,cells,obstacles, ii, packet, last_packet);
+        propagate(params,cells,tmp_cells, packet, last_packet);
+        collision(params,cells,tmp_cells,obstacles, av_vels, ii, packet, last_packet);   
         
         #ifdef DEBUG
         printf("==timestep: %d==\n",ii);
@@ -182,8 +189,6 @@ int main(int argc, char* argv[])
     timstr=ru.ru_stime;        
     systim=timstr.tv_sec+(timstr.tv_usec/1000000.0);
 
-    int packet = (params.ny/size) * params.nx;
-    int last_packet = params.ny%size * params.nx;
     float* buffer = malloc(packet * 9 * sizeof(float));
 
 
@@ -271,7 +276,7 @@ int main(int argc, char* argv[])
     return EXIT_SUCCESS;
 }
 
-int accelerate_flow(const t_param params, t_speed* cells, int* obstacles, int index)
+int accelerate_flow(const t_param params, t_speed* cells, int* obstacles, int index, int packet, int last_packet)
 {
     int ii;     /* generic counters */
 
@@ -299,13 +304,11 @@ int accelerate_flow(const t_param params, t_speed* cells, int* obstacles, int in
     }
 
     if(index != 0) {
-        int rank, size, packet, up, down, last_packet;
+        int rank, size, up, down;
         MPI_Status status;  
 
         MPI_Comm_rank(MPI_COMM_WORLD, &rank);
         MPI_Comm_size(MPI_COMM_WORLD, &size);
-        packet = (params.ny/size) * params.nx;
-        last_packet = params.ny%size * params.nx;
 
         // Compute senders and receivers.
         if(rank == 0) {
@@ -429,7 +432,7 @@ int accelerate_flow(const t_param params, t_speed* cells, int* obstacles, int in
     return EXIT_SUCCESS;
 }
 
-int propagate(const t_param params, t_speed* cells, t_speed* tmp_cells)
+int propagate(const t_param params, t_speed* cells, t_speed* tmp_cells, int packet, int last_packet)
 {
     int ii;
     int size;
@@ -441,9 +444,6 @@ int propagate(const t_param params, t_speed* cells, t_speed* tmp_cells)
 
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    // Number of cells each assigned to each process.
-    packet = (params.ny/size) * params.nx;
-    last_packet = params.ny % size * params.nx;
 
     // First process gets first line.
     if(rank == 0) {
@@ -578,7 +578,7 @@ int propagate(const t_param params, t_speed* cells, t_speed* tmp_cells)
   return EXIT_SUCCESS;
 }
 
-int collision(const t_param params, t_speed* cells, t_speed* tmp_cells, int* obstacles, float* av_vels, int index)
+int collision(const t_param params, t_speed* cells, t_speed* tmp_cells, int* obstacles, float* av_vels, int index, int packet, int last_packet)
 {
     int ii,kk;                    /* generic counters */
     float u[NSPEEDS];            /* directional velocities */
@@ -592,10 +592,6 @@ int collision(const t_param params, t_speed* cells, t_speed* tmp_cells, int* obs
 
     // Get number of processes.
     MPI_Comm_size(MPI_COMM_WORLD, &size);
-
-    // The number of cells assigned to each process;
-    int packet = (params.ny/size) * params.nx;
-    int last_packet = (params.ny%size) * params.nx;
 
     // Determine rank of current process
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);

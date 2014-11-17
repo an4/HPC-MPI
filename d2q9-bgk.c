@@ -104,9 +104,6 @@ int finalise(const t_param* params, t_speed** cells_ptr, t_speed** tmp_cells_ptr
 ** The total should remain constant from one timestep to the next. */
 float total_density(const t_param params, t_speed* cells);
 
-/* compute average velocity */
-float av_velocity(const t_param params, t_speed* cells, int* obstacles);
-
 /* calculate Reynolds number */
 float calc_reynolds(const t_param params, t_speed* cells, int* obstacles, float final_average_velocity);
 
@@ -185,37 +182,37 @@ int main(int argc, char* argv[])
     timstr=ru.ru_stime;        
     systim=timstr.tv_sec+(timstr.tv_usec/1000000.0);
 
-    int piece = (params.ny/size) * params.nx;
-    float* buffer = malloc(piece * 9 * sizeof(float));
+    int packet = (params.ny/size) * params.nx;
+    float* buffer = malloc(packet * 9 * sizeof(float));
 
-    if(rank != 0) {
-        for(ii=0;ii<piece;ii++) {
-            buffer[9*ii]   = cells[piece*rank+ii].speeds[0];
-            buffer[9*ii+1] = cells[piece*rank+ii].speeds[1];
-            buffer[9*ii+2] = cells[piece*rank+ii].speeds[2];
-            buffer[9*ii+3] = cells[piece*rank+ii].speeds[3];
-            buffer[9*ii+4] = cells[piece*rank+ii].speeds[4];
-            buffer[9*ii+5] = cells[piece*rank+ii].speeds[5];
-            buffer[9*ii+6] = cells[piece*rank+ii].speeds[6];
-            buffer[9*ii+7] = cells[piece*rank+ii].speeds[7];
-            buffer[9*ii+8] = cells[piece*rank+ii].speeds[8];
+    if(rank != size-1) {
+        for(ii=0;ii<packet;ii++) {
+            buffer[9*ii]   = cells[packet*rank+ii].speeds[0];
+            buffer[9*ii+1] = cells[packet*rank+ii].speeds[1];
+            buffer[9*ii+2] = cells[packet*rank+ii].speeds[2];
+            buffer[9*ii+3] = cells[packet*rank+ii].speeds[3];
+            buffer[9*ii+4] = cells[packet*rank+ii].speeds[4];
+            buffer[9*ii+5] = cells[packet*rank+ii].speeds[5];
+            buffer[9*ii+6] = cells[packet*rank+ii].speeds[6];
+            buffer[9*ii+7] = cells[packet*rank+ii].speeds[7];
+            buffer[9*ii+8] = cells[packet*rank+ii].speeds[8];
         }
-        MPI_Ssend(buffer, 9*piece, MPI_FLOAT, 0, 3, MPI_COMM_WORLD);
+        MPI_Ssend(buffer, 9*packet, MPI_FLOAT, size-1, 3, MPI_COMM_WORLD);
     } else {
         MPI_Status status;
-        for(ii=1;ii<size;ii++) {
-            MPI_Recv(buffer, 9*piece, MPI_FLOAT, ii, 3, MPI_COMM_WORLD, &status);
+        for(ii=0;ii<size-1;ii++) {
+            MPI_Recv(buffer, 9*packet, MPI_FLOAT, ii, 3, MPI_COMM_WORLD, &status);
             int jj;
-            for(jj=0;jj<piece;jj++) {
-                cells[ii*piece+jj].speeds[0] = buffer[9*jj];
-                cells[ii*piece+jj].speeds[1] = buffer[9*jj+1];
-                cells[ii*piece+jj].speeds[2] = buffer[9*jj+2];
-                cells[ii*piece+jj].speeds[3] = buffer[9*jj+3];
-                cells[ii*piece+jj].speeds[4] = buffer[9*jj+4];
-                cells[ii*piece+jj].speeds[5] = buffer[9*jj+5];
-                cells[ii*piece+jj].speeds[6] = buffer[9*jj+6];
-                cells[ii*piece+jj].speeds[7] = buffer[9*jj+7];
-                cells[ii*piece+jj].speeds[8] = buffer[9*jj+8];
+            for(jj=0;jj<packet;jj++) {
+                cells[ii*packet+jj].speeds[0] = buffer[9*jj];
+                cells[ii*packet+jj].speeds[1] = buffer[9*jj+1];
+                cells[ii*packet+jj].speeds[2] = buffer[9*jj+2];
+                cells[ii*packet+jj].speeds[3] = buffer[9*jj+3];
+                cells[ii*packet+jj].speeds[4] = buffer[9*jj+4];
+                cells[ii*packet+jj].speeds[5] = buffer[9*jj+5];
+                cells[ii*packet+jj].speeds[6] = buffer[9*jj+6];
+                cells[ii*packet+jj].speeds[7] = buffer[9*jj+7];
+                cells[ii*packet+jj].speeds[8] = buffer[9*jj+8];
             }
         }
         free(buffer);
@@ -230,7 +227,7 @@ int main(int argc, char* argv[])
         MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
     }
 
-    if(rank == 0) {
+    if(rank == size-1) {
         /* write final values and free memory */
         printf("==done==\n");
         printf("Reynolds number:\t\t%.12E\n",calc_reynolds(params,cells,obstacles,av_vels[params.maxIters-1]));
@@ -272,12 +269,12 @@ int accelerate_flow(const t_param params, t_speed* cells, int* obstacles, int in
     }
 
     if(index != 0) {
-        int rank, size, piece, up, down;
+        int rank, size, packet, up, down;
         MPI_Status status;  
 
         MPI_Comm_rank(MPI_COMM_WORLD, &rank);
         MPI_Comm_size(MPI_COMM_WORLD, &size);
-        piece = (params.ny/size) * params.nx;
+        packet = (params.ny/size) * params.nx;
 
         // Compute senders and receivers.
         if(rank == 0) {
@@ -307,8 +304,8 @@ int accelerate_flow(const t_param params, t_speed* cells, int* obstacles, int in
         float* to_down      = malloc(buffer_size * sizeof(float));
 
         int start, end;
-        start = piece * rank;
-        end = piece * (rank+1);
+        start = packet * rank;
+        end = packet * (rank+1);
 
         // Copy values to be sent.
         for(ii=0; ii<params.nx; ii++) {
@@ -403,12 +400,12 @@ int propagate(const t_param params, t_speed* cells, t_speed* tmp_cells)
     int rank;
     int start;
     int end;
-    int piece;
+    int packet;
 
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     // Number of cells each assigned to each process.
-    piece = (params.ny/size) * params.nx;
+    packet = (params.ny/size) * params.nx;
 
     // First process gets first line.
     if(rank == 0) {
@@ -488,13 +485,13 @@ int propagate(const t_param params, t_speed* cells, t_speed* tmp_cells)
 
     if(rank == 0) {
         start = params.nx;
-        end = piece*(rank+1);
+        end = packet*(rank+1);
     } else if(rank == size-1) {
-        start = piece*rank;
-        end = piece*(rank+1)-params.nx;
+        start = packet*rank;
+        end = packet*(rank+1)-params.nx;
     } else {
-        start = piece*rank;
-        end = piece*(rank+1);
+        start = packet*rank;
+        end = packet*(rank+1);
     }
 
     //for(ii=params.ny; ii<params.nx*(params.ny-1); ii++) {
@@ -556,7 +553,7 @@ int collision(const t_param params, t_speed* cells, t_speed* tmp_cells, int* obs
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
     // The number of cells assigned to each process;
-    int piece = (params.ny/size) * params.nx;
+    int packet = (params.ny/size) * params.nx;
 
     // Master = size-1
 
@@ -565,7 +562,7 @@ int collision(const t_param params, t_speed* cells, t_speed* tmp_cells, int* obs
 
     
     //for(ii=0;ii<params.ny*params.nx;ii++) {
-    for(ii=rank*piece; ii<(rank+1)*piece; ii++) {
+    for(ii=rank*packet; ii<(rank+1)*packet; ii++) {
         /* don't consider occupied cells */
         if(!obstacles[ii]) {
             /* compute local density total */
@@ -830,55 +827,6 @@ int finalise(const t_param* params, t_speed** cells_ptr, t_speed** tmp_cells_ptr
   *av_vels_ptr = NULL;
 
   return EXIT_SUCCESS;
-}
-
-float av_velocity(const t_param params, t_speed* cells, int* obstacles)
-{
-  int    ii,jj,kk;       /* generic counters */
-  int    tot_cells = 0;  /* no. of cells used in calculation */
-  float local_density;  /* total density in cell */
-  float u_x;            /* x-component of velocity for current cell */
-  float u_y;            /* y-component of velocity for current cell */
-  float tot_u;          /* accumulated magnitudes of velocity for each cell */
-
-  /* initialise */
-  tot_u = 0.0;
-
-  /* loop over all non-blocked cells */
-  for(ii=0;ii<params.ny;ii++) {
-    for(jj=0;jj<params.nx;jj++) {
-      /* ignore occupied cells */
-      if(!obstacles[ii*params.nx + jj]) {
-    /* local density total */
-    local_density = 0.0;
-    for(kk=0;kk<NSPEEDS;kk++) {
-      local_density += cells[ii*params.nx + jj].speeds[kk];
-    }
-    /* x-component of velocity */
-    u_x = (cells[ii*params.nx + jj].speeds[1] + 
-            cells[ii*params.nx + jj].speeds[5] + 
-            cells[ii*params.nx + jj].speeds[8]
-            - (cells[ii*params.nx + jj].speeds[3] + 
-               cells[ii*params.nx + jj].speeds[6] + 
-               cells[ii*params.nx + jj].speeds[7])) / 
-      local_density;
-    /* compute y velocity component */
-    u_y = (cells[ii*params.nx + jj].speeds[2] + 
-            cells[ii*params.nx + jj].speeds[5] + 
-            cells[ii*params.nx + jj].speeds[6]
-            - (cells[ii*params.nx + jj].speeds[4] + 
-               cells[ii*params.nx + jj].speeds[7] + 
-               cells[ii*params.nx + jj].speeds[8])) /
-      local_density;
-    /* accumulate the norm of x- and y- velocity components */
-    tot_u += sqrt((u_x * u_x) + (u_y * u_y));
-    /* increase counter of inspected cells */
-    ++tot_cells;
-      }
-    }
-  }
-
-  return tot_u / (float)tot_cells;
 }
 
 float calc_reynolds(const t_param params, t_speed* cells, int* obstacles, float final_average_velocity)

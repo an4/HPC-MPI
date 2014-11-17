@@ -183,19 +183,38 @@ int main(int argc, char* argv[])
     systim=timstr.tv_sec+(timstr.tv_usec/1000000.0);
 
     int packet = (params.ny/size) * params.nx;
+    int last_packet = 0;
     float* buffer = malloc(packet * 9 * sizeof(float));
 
+    if(params.ny % size != 0){
+        last_packet = params.ny%size;
+    }
+
     if(rank != 0) {
-        for(ii=0;ii<packet;ii++) {
-            buffer[9*ii]   = cells[packet*rank+ii].speeds[0];
-            buffer[9*ii+1] = cells[packet*rank+ii].speeds[1];
-            buffer[9*ii+2] = cells[packet*rank+ii].speeds[2];
-            buffer[9*ii+3] = cells[packet*rank+ii].speeds[3];
-            buffer[9*ii+4] = cells[packet*rank+ii].speeds[4];
-            buffer[9*ii+5] = cells[packet*rank+ii].speeds[5];
-            buffer[9*ii+6] = cells[packet*rank+ii].speeds[6];
-            buffer[9*ii+7] = cells[packet*rank+ii].speeds[7];
-            buffer[9*ii+8] = cells[packet*rank+ii].speeds[8];
+        if(rank == size-1 && last_packet != 0) {
+            for(ii=0;ii<last_packet;ii++) {
+                buffer[9*ii]   = cells[packet*rank+ii].speeds[0];
+                buffer[9*ii+1] = cells[packet*rank+ii].speeds[1];
+                buffer[9*ii+2] = cells[packet*rank+ii].speeds[2];
+                buffer[9*ii+3] = cells[packet*rank+ii].speeds[3];
+                buffer[9*ii+4] = cells[packet*rank+ii].speeds[4];
+                buffer[9*ii+5] = cells[packet*rank+ii].speeds[5];
+                buffer[9*ii+6] = cells[packet*rank+ii].speeds[6];
+                buffer[9*ii+7] = cells[packet*rank+ii].speeds[7];
+                buffer[9*ii+8] = cells[packet*rank+ii].speeds[8];
+            }
+        } else {
+            for(ii=0;ii<packet;ii++) {
+                buffer[9*ii]   = cells[packet*rank+ii].speeds[0];
+                buffer[9*ii+1] = cells[packet*rank+ii].speeds[1];
+                buffer[9*ii+2] = cells[packet*rank+ii].speeds[2];
+                buffer[9*ii+3] = cells[packet*rank+ii].speeds[3];
+                buffer[9*ii+4] = cells[packet*rank+ii].speeds[4];
+                buffer[9*ii+5] = cells[packet*rank+ii].speeds[5];
+                buffer[9*ii+6] = cells[packet*rank+ii].speeds[6];
+                buffer[9*ii+7] = cells[packet*rank+ii].speeds[7];
+                buffer[9*ii+8] = cells[packet*rank+ii].speeds[8];
+            }
         }
         MPI_Ssend(buffer, 9*packet, MPI_FLOAT, 0, 3, MPI_COMM_WORLD);
     } else {
@@ -203,16 +222,30 @@ int main(int argc, char* argv[])
         for(ii=1;ii<size;ii++) {
             MPI_Recv(buffer, 9*packet, MPI_FLOAT, ii, 3, MPI_COMM_WORLD, &status);
             int jj;
-            for(jj=0;jj<packet;jj++) {
-                cells[ii*packet+jj].speeds[0] = buffer[9*jj];
-                cells[ii*packet+jj].speeds[1] = buffer[9*jj+1];
-                cells[ii*packet+jj].speeds[2] = buffer[9*jj+2];
-                cells[ii*packet+jj].speeds[3] = buffer[9*jj+3];
-                cells[ii*packet+jj].speeds[4] = buffer[9*jj+4];
-                cells[ii*packet+jj].speeds[5] = buffer[9*jj+5];
-                cells[ii*packet+jj].speeds[6] = buffer[9*jj+6];
-                cells[ii*packet+jj].speeds[7] = buffer[9*jj+7];
-                cells[ii*packet+jj].speeds[8] = buffer[9*jj+8];
+            if(rank == size-1 && last_packet!=0) {
+                for(jj=0;jj<last_packet;jj++) {
+                    cells[ii*packet+jj].speeds[0] = buffer[9*jj];
+                    cells[ii*packet+jj].speeds[1] = buffer[9*jj+1];
+                    cells[ii*packet+jj].speeds[2] = buffer[9*jj+2];
+                    cells[ii*packet+jj].speeds[3] = buffer[9*jj+3];
+                    cells[ii*packet+jj].speeds[4] = buffer[9*jj+4];
+                    cells[ii*packet+jj].speeds[5] = buffer[9*jj+5];
+                    cells[ii*packet+jj].speeds[6] = buffer[9*jj+6];
+                    cells[ii*packet+jj].speeds[7] = buffer[9*jj+7];
+                    cells[ii*packet+jj].speeds[8] = buffer[9*jj+8];
+                }
+            } else {
+                for(jj=0;jj<packet;jj++) {
+                    cells[ii*packet+jj].speeds[0] = buffer[9*jj];
+                    cells[ii*packet+jj].speeds[1] = buffer[9*jj+1];
+                    cells[ii*packet+jj].speeds[2] = buffer[9*jj+2];
+                    cells[ii*packet+jj].speeds[3] = buffer[9*jj+3];
+                    cells[ii*packet+jj].speeds[4] = buffer[9*jj+4];
+                    cells[ii*packet+jj].speeds[5] = buffer[9*jj+5];
+                    cells[ii*packet+jj].speeds[6] = buffer[9*jj+6];
+                    cells[ii*packet+jj].speeds[7] = buffer[9*jj+7];
+                    cells[ii*packet+jj].speeds[8] = buffer[9*jj+8];
+                }
             }
         }
         free(buffer);

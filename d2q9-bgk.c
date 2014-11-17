@@ -185,7 +185,7 @@ int main(int argc, char* argv[])
     int packet = (params.ny/size) * params.nx;
     float* buffer = malloc(packet * 9 * sizeof(float));
 
-    if(rank < size-1) {
+    if(rank != 0) {
         for(ii=0;ii<packet;ii++) {
             buffer[9*ii]   = cells[packet*rank+ii].speeds[0];
             buffer[9*ii+1] = cells[packet*rank+ii].speeds[1];
@@ -197,10 +197,10 @@ int main(int argc, char* argv[])
             buffer[9*ii+7] = cells[packet*rank+ii].speeds[7];
             buffer[9*ii+8] = cells[packet*rank+ii].speeds[8];
         }
-        MPI_Ssend(buffer, 9*packet, MPI_FLOAT, size-1, 3, MPI_COMM_WORLD);
+        MPI_Ssend(buffer, 9*packet, MPI_FLOAT, 0, 3, MPI_COMM_WORLD);
     } else {
         MPI_Status status;
-        for(ii=0;ii<size-1;ii++) {
+        for(ii=1;ii<size;ii++) {
             MPI_Recv(buffer, 9*packet, MPI_FLOAT, ii, 3, MPI_COMM_WORLD, &status);
             int jj;
             for(jj=0;jj<packet;jj++) {

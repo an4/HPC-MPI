@@ -527,9 +527,9 @@ int propagate(const t_param params, t_speed* cells, t_speed* tmp_cells)
     } else if(rank == size-1 && last_packet == 0) {
         start = packet*rank;
         end = packet*(rank+1)-params.nx;
-    } else if(ranl == size-1) {
+    } else if(rank == size-1) {
         start = packet*rank;
-        end = pacjet*rank + last_packet - params.nx;
+        end = packet*rank + last_packet - params.nx;
     } else {
         start = packet*rank;
         end = packet*(rank+1);

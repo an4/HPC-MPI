@@ -185,7 +185,7 @@ int main(int argc, char* argv[])
     int packet = (params.ny/size) * params.nx;
     float* buffer = malloc(packet * 9 * sizeof(float));
 
-    if(rank != size-1) {
+    if(rank < size-1) {
         for(ii=0;ii<packet;ii++) {
             buffer[9*ii]   = cells[packet*rank+ii].speeds[0];
             buffer[9*ii+1] = cells[packet*rank+ii].speeds[1];
@@ -227,7 +227,7 @@ int main(int argc, char* argv[])
         MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
     }
 
-    if(rank == size-1) {
+    if(rank == 0) {
         /* write final values and free memory */
         printf("==done==\n");
         printf("Reynolds number:\t\t%.12E\n",calc_reynolds(params,cells,obstacles,av_vels[params.maxIters-1]));

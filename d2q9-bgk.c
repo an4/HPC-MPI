@@ -183,12 +183,9 @@ int main(int argc, char* argv[])
     systim=timstr.tv_sec+(timstr.tv_usec/1000000.0);
 
     int packet = (params.ny/size) * params.nx;
-    int last_packet = 0;
+    int last_packet = params.ny%size * params.nx;
     float* buffer = malloc(packet * 9 * sizeof(float));
 
-    if(params.ny % size != 0){
-        last_packet = params.ny%size;
-    }
 
     if(rank != 0) {
         if(rank == size-1 && last_packet != 0) {
@@ -302,12 +299,13 @@ int accelerate_flow(const t_param params, t_speed* cells, int* obstacles, int in
     }
 
     if(index != 0) {
-        int rank, size, packet, up, down;
+        int rank, size, packet, up, down, last_packet;
         MPI_Status status;  
 
         MPI_Comm_rank(MPI_COMM_WORLD, &rank);
         MPI_Comm_size(MPI_COMM_WORLD, &size);
         packet = (params.ny/size) * params.nx;
+        last_packet = params.ny%size * params.nx;
 
         // Compute senders and receivers.
         if(rank == 0) {
@@ -337,8 +335,13 @@ int accelerate_flow(const t_param params, t_speed* cells, int* obstacles, int in
         float* to_down      = malloc(buffer_size * sizeof(float));
 
         int start, end;
-        start = packet * rank;
-        end = packet * (rank+1);
+        if(last_packet != 0 && rank == size-1) {
+            start = packet * rank;
+            end = packet * rank + last_packet;
+        } else {
+            start = packet * rank;
+            end = packet * (rank+1);
+        }
 
         // Copy values to be sent.
         for(ii=0; ii<params.nx; ii++) {
@@ -434,11 +437,13 @@ int propagate(const t_param params, t_speed* cells, t_speed* tmp_cells)
     int start;
     int end;
     int packet;
+    int last_packet;
 
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     // Number of cells each assigned to each process.
     packet = (params.ny/size) * params.nx;
+    last_packet = params.ny % size * params.nx;
 
     // First process gets first line.
     if(rank == 0) {
@@ -519,9 +524,12 @@ int propagate(const t_param params, t_speed* cells, t_speed* tmp_cells)
     if(rank == 0) {
         start = params.nx;
         end = packet*(rank+1);
-    } else if(rank == size-1) {
+    } else if(rank == size-1 && last_packet == 0) {
         start = packet*rank;
         end = packet*(rank+1)-params.nx;
+    } else if(ranl == size-1) {
+        start = packet*rank;
+        end = pacjet*rank + last_packet - params.nx;
     } else {
         start = packet*rank;
         end = packet*(rank+1);
@@ -587,15 +595,22 @@ int collision(const t_param params, t_speed* cells, t_speed* tmp_cells, int* obs
 
     // The number of cells assigned to each process;
     int packet = (params.ny/size) * params.nx;
-
-    // Master = size-1
+    int last_packet = (params.ny%size) * params.nx;
 
     // Determine rank of current process
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
     
-    //for(ii=0;ii<params.ny*params.nx;ii++) {
-    for(ii=rank*packet; ii<(rank+1)*packet; ii++) {
+    int start, end;
+    if(last_packet != 0 && rank == size-1) {
+        start = packet * rank;
+        end = packet * rank + last_packet;
+    } else {
+        start = packet * rank;
+        end = packet * (rank+1);
+    }
+
+    for(ii=start; ii<end; ii++) {
         /* don't consider occupied cells */
         if(!obstacles[ii]) {
             /* compute local density total */

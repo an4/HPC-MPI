@@ -91,9 +91,9 @@ int initialise(const char* paramfile, const char* obstaclefile,
 ** timestep calls, in order, the functions:
 ** accelerate_flow(), propagate() & collision()
 */
-int accelerate_flow(const t_param params, t_speed* cells, int* obstacles, int index, int packet, int last_packet);
+int accelerate_flow(const t_param params, t_speed* cells, int* obstacles, int index, int packet, int last_packet, int start, int end);
 int propagate(const t_param params, t_speed* cells, t_speed* tmp_cells, int packet, int last_packet);
-int collision(const t_param params, t_speed* cells, t_speed* tmp_cells, int* obstacles, float* av_vels, int index, int packet, int last_packet);
+int collision(const t_param params, t_speed* cells, t_speed* tmp_cells, int* obstacles, float* av_vels, int index, int packet, int last_packet, int start, int end);
 int write_values(const t_param params, t_speed* cells, int* obstacles, float* av_vels);
 
 /* finalise, including freeing up allocated memory */
@@ -163,6 +163,15 @@ int main(int argc, char* argv[])
         packet += params.nx;
     }
 
+    int start, end;
+    if(last_packet != 0 && rank == size-1) {
+        start = packet * rank;
+        end = packet * rank + last_packet;
+    } else {
+        start = packet * rank;
+        end = packet * (rank+1);
+    }
+
     /* iterate for maxIters timesteps */
     gettimeofday(&timstr,NULL);
     tic=timstr.tv_sec+(timstr.tv_usec/1000000.0);
@@ -170,9 +179,9 @@ int main(int argc, char* argv[])
     for(ii=0;ii<params.maxIters;ii++) {
         MPI_Barrier(MPI_COMM_WORLD);
 
-        accelerate_flow(params,cells,obstacles, ii, packet, last_packet);
+        accelerate_flow(params,cells,obstacles, ii, packet, last_packet, start, end);
         propagate(params,cells,tmp_cells, packet, last_packet);
-        collision(params,cells,tmp_cells,obstacles, av_vels, ii, packet, last_packet);   
+        collision(params,cells,tmp_cells,obstacles, av_vels, ii, packet, last_packet, start, end);   
         
         #ifdef DEBUG
         printf("==timestep: %d==\n",ii);
@@ -194,61 +203,50 @@ int main(int argc, char* argv[])
 
     if(rank != 0) {
         if(rank == size-1 && last_packet != 0) {
-            for(ii=0;ii<last_packet;ii++) {
-                buffer[9*ii]   = cells[packet*rank+ii].speeds[0];
-                buffer[9*ii+1] = cells[packet*rank+ii].speeds[1];
-                buffer[9*ii+2] = cells[packet*rank+ii].speeds[2];
-                buffer[9*ii+3] = cells[packet*rank+ii].speeds[3];
-                buffer[9*ii+4] = cells[packet*rank+ii].speeds[4];
-                buffer[9*ii+5] = cells[packet*rank+ii].speeds[5];
-                buffer[9*ii+6] = cells[packet*rank+ii].speeds[6];
-                buffer[9*ii+7] = cells[packet*rank+ii].speeds[7];
-                buffer[9*ii+8] = cells[packet*rank+ii].speeds[8];
-            }
+            end = last_packet;
         } else {
-            for(ii=0;ii<packet;ii++) {
-                buffer[9*ii]   = cells[packet*rank+ii].speeds[0];
-                buffer[9*ii+1] = cells[packet*rank+ii].speeds[1];
-                buffer[9*ii+2] = cells[packet*rank+ii].speeds[2];
-                buffer[9*ii+3] = cells[packet*rank+ii].speeds[3];
-                buffer[9*ii+4] = cells[packet*rank+ii].speeds[4];
-                buffer[9*ii+5] = cells[packet*rank+ii].speeds[5];
-                buffer[9*ii+6] = cells[packet*rank+ii].speeds[6];
-                buffer[9*ii+7] = cells[packet*rank+ii].speeds[7];
-                buffer[9*ii+8] = cells[packet*rank+ii].speeds[8];
-            }
+            end = packet;
+        }
+        for(ii=0;ii<end;ii++) {
+            buffer[9*ii]   = cells[start+ii].speeds[0];
+            buffer[9*ii+1] = cells[start+ii].speeds[1];
+            buffer[9*ii+2] = cells[start+ii].speeds[2];
+            buffer[9*ii+3] = cells[start+ii].speeds[3];
+            buffer[9*ii+4] = cells[start+ii].speeds[4];
+            buffer[9*ii+5] = cells[start+ii].speeds[5];
+            buffer[9*ii+6] = cells[start+ii].speeds[6];
+            buffer[9*ii+7] = cells[start+ii].speeds[7];
+            buffer[9*ii+8] = cells[start+ii].speeds[8];
         }
         MPI_Ssend(buffer, 9*packet, MPI_FLOAT, 0, 3, MPI_COMM_WORLD);
     } else {
         MPI_Status status;
-        for(ii=1;ii<size;ii++) {
+        int jj;
+        for(ii=1;ii<size-1;ii++) {
             MPI_Recv(buffer, 9*packet, MPI_FLOAT, ii, 3, MPI_COMM_WORLD, &status);
-            int jj;
-            if(rank == size-1 && last_packet!=0) {
-                for(jj=0;jj<last_packet;jj++) {
-                    cells[ii*packet+jj].speeds[0] = buffer[9*jj];
-                    cells[ii*packet+jj].speeds[1] = buffer[9*jj+1];
-                    cells[ii*packet+jj].speeds[2] = buffer[9*jj+2];
-                    cells[ii*packet+jj].speeds[3] = buffer[9*jj+3];
-                    cells[ii*packet+jj].speeds[4] = buffer[9*jj+4];
-                    cells[ii*packet+jj].speeds[5] = buffer[9*jj+5];
-                    cells[ii*packet+jj].speeds[6] = buffer[9*jj+6];
-                    cells[ii*packet+jj].speeds[7] = buffer[9*jj+7];
-                    cells[ii*packet+jj].speeds[8] = buffer[9*jj+8];
-                }
-            } else {
-                for(jj=0;jj<packet;jj++) {
-                    cells[ii*packet+jj].speeds[0] = buffer[9*jj];
-                    cells[ii*packet+jj].speeds[1] = buffer[9*jj+1];
-                    cells[ii*packet+jj].speeds[2] = buffer[9*jj+2];
-                    cells[ii*packet+jj].speeds[3] = buffer[9*jj+3];
-                    cells[ii*packet+jj].speeds[4] = buffer[9*jj+4];
-                    cells[ii*packet+jj].speeds[5] = buffer[9*jj+5];
-                    cells[ii*packet+jj].speeds[6] = buffer[9*jj+6];
-                    cells[ii*packet+jj].speeds[7] = buffer[9*jj+7];
-                    cells[ii*packet+jj].speeds[8] = buffer[9*jj+8];
-                }
+            for(jj=0;jj<packet;jj++) {
+                cells[ii*packet+jj].speeds[0] = buffer[9*jj];
+                cells[ii*packet+jj].speeds[1] = buffer[9*jj+1];
+                cells[ii*packet+jj].speeds[2] = buffer[9*jj+2];
+                cells[ii*packet+jj].speeds[3] = buffer[9*jj+3];
+                cells[ii*packet+jj].speeds[4] = buffer[9*jj+4];
+                cells[ii*packet+jj].speeds[5] = buffer[9*jj+5];
+                cells[ii*packet+jj].speeds[6] = buffer[9*jj+6];
+                cells[ii*packet+jj].speeds[7] = buffer[9*jj+7];
+                cells[ii*packet+jj].speeds[8] = buffer[9*jj+8];
             }
+        }
+        MPI_Recv(buffer, 9*packet, MPI_FLOAT, size-1, 3, MPI_COMM_WORLD, &status);
+        for(jj=0;jj<last_packet;jj++) {
+            cells[ii*packet+jj].speeds[0] = buffer[9*jj];
+            cells[ii*packet+jj].speeds[1] = buffer[9*jj+1];
+            cells[ii*packet+jj].speeds[2] = buffer[9*jj+2];
+            cells[ii*packet+jj].speeds[3] = buffer[9*jj+3];
+            cells[ii*packet+jj].speeds[4] = buffer[9*jj+4];
+            cells[ii*packet+jj].speeds[5] = buffer[9*jj+5];
+            cells[ii*packet+jj].speeds[6] = buffer[9*jj+6];
+            cells[ii*packet+jj].speeds[7] = buffer[9*jj+7];
+            cells[ii*packet+jj].speeds[8] = buffer[9*jj+8];
         }
         free(buffer);
         buffer = NULL;
@@ -276,7 +274,7 @@ int main(int argc, char* argv[])
     return EXIT_SUCCESS;
 }
 
-int accelerate_flow(const t_param params, t_speed* cells, int* obstacles, int index, int packet, int last_packet)
+int accelerate_flow(const t_param params, t_speed* cells, int* obstacles, int index, int packet, int last_packet, int start, int end)
 {
     int ii;     /* generic counters */
 
@@ -336,15 +334,6 @@ int accelerate_flow(const t_param params, t_speed* cells, int* obstacles, int in
         float* to_up        = malloc(buffer_size * sizeof(float));
         // 8, 4, 7
         float* to_down      = malloc(buffer_size * sizeof(float));
-
-        int start, end;
-        if(last_packet != 0 && rank == size-1) {
-            start = packet * rank;
-            end = packet * rank + last_packet;
-        } else {
-            start = packet * rank;
-            end = packet * (rank+1);
-        }
 
         // Copy values to be sent.
         for(ii=0; ii<params.nx; ii++) {
@@ -576,7 +565,7 @@ int propagate(const t_param params, t_speed* cells, t_speed* tmp_cells, int pack
   return EXIT_SUCCESS;
 }
 
-int collision(const t_param params, t_speed* cells, t_speed* tmp_cells, int* obstacles, float* av_vels, int index, int packet, int last_packet)
+int collision(const t_param params, t_speed* cells, t_speed* tmp_cells, int* obstacles, float* av_vels, int index, int packet, int last_packet, int start, int end)
 {
     int ii,kk;                    /* generic counters */
     float u[NSPEEDS];            /* directional velocities */
@@ -593,16 +582,6 @@ int collision(const t_param params, t_speed* cells, t_speed* tmp_cells, int* obs
 
     // Determine rank of current process
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
-    
-    int start, end;
-    if(last_packet != 0 && rank == size-1) {
-        start = packet * rank;
-        end = packet * rank + last_packet;
-    } else {
-        start = packet * rank;
-        end = packet * (rank+1);
-    }
 
     for(ii=start; ii<end; ii++) {
         /* don't consider occupied cells */

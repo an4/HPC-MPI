@@ -91,9 +91,9 @@ int initialise(const char* paramfile, const char* obstaclefile,
 ** timestep calls, in order, the functions:
 ** accelerate_flow(), propagate() & collision()
 */
-int accelerate_flow(const t_param params, t_speed* cells, int* obstacles, int index, int packet, int start, int end);
-int propagate(const t_param params, t_speed* cells, t_speed* tmp_cells, int packet, int start, int end);
-int collision(const t_param params, t_speed* cells, t_speed* tmp_cells, int* obstacles, float* av_vels, int index, int packet, int start, int end);
+int accelerate_flow(const t_param params, t_speed* cells, int* obstacles, int index, int start, int end);
+int propagate(const t_param params, t_speed* cells, t_speed* tmp_cells, int start, int end);
+int collision(const t_param params, t_speed* cells, t_speed* tmp_cells, int* obstacles, float* av_vels, int index, int start, int end);
 int write_values(const t_param params, t_speed* cells, int* obstacles, float* av_vels);
 
 /* finalise, including freeing up allocated memory */
@@ -174,9 +174,11 @@ int main(int argc, char* argv[])
         end = packet * (rank+1);
     } else {
     	buff = (params.ny/size + 1) * params.nx;
-        start = (packet + params.nx) * (rmd-1) + packet * (rank-rmd+1);
-        end = (packet + params.nx) * (rmd-1) + packet * (rank-rmd+2);
+        start = (packet + params.nx) * (rmd-1) + packet * (rank-rmd);
+        end = (packet + params.nx) * (rmd-1) + packet * (rank-rmd+1);
     }
+
+    printf("Rank:%d, start:%d, end:%d\n",rank,start,end);
 
     /* iterate for maxIters timesteps */
     gettimeofday(&timstr,NULL);
@@ -185,9 +187,9 @@ int main(int argc, char* argv[])
     for(ii=0;ii<params.maxIters;ii++) {
         MPI_Barrier(MPI_COMM_WORLD);
 
-        accelerate_flow(params,cells,obstacles, ii, packet, start, end);
-        propagate(params,cells,tmp_cells, packet, start, end);
-        collision(params,cells,tmp_cells,obstacles, av_vels, ii, packet, start, end);   
+        accelerate_flow(params,cells,obstacles, ii, start, end);
+        propagate(params,cells,tmp_cells, start, end);
+        collision(params,cells,tmp_cells,obstacles, av_vels, ii, start, end);   
         
         #ifdef DEBUG
         printf("==timestep: %d==\n",ii);
@@ -294,7 +296,7 @@ int main(int argc, char* argv[])
     return EXIT_SUCCESS;
 }
 
-int accelerate_flow(const t_param params, t_speed* cells, int* obstacles, int index, int packet, int start, int end)
+int accelerate_flow(const t_param params, t_speed* cells, int* obstacles, int index, int start, int end)
 {
     int ii;     /* generic counters */
 
@@ -441,7 +443,7 @@ int accelerate_flow(const t_param params, t_speed* cells, int* obstacles, int in
     return EXIT_SUCCESS;
 }
 
-int propagate(const t_param params, t_speed* cells, t_speed* tmp_cells, int packet, int start, int end)
+int propagate(const t_param params, t_speed* cells, t_speed* tmp_cells, int start, int end)
 {
     int ii;
     int size;
@@ -576,7 +578,7 @@ int propagate(const t_param params, t_speed* cells, t_speed* tmp_cells, int pack
   return EXIT_SUCCESS;
 }
 
-int collision(const t_param params, t_speed* cells, t_speed* tmp_cells, int* obstacles, float* av_vels, int index, int packet, int start, int end)
+int collision(const t_param params, t_speed* cells, t_speed* tmp_cells, int* obstacles, float* av_vels, int index, int start, int end)
 {
     int ii,kk;                    /* generic counters */
     float u[NSPEEDS];            /* directional velocities */

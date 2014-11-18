@@ -177,8 +177,6 @@ int main(int argc, char* argv[])
         start = (packet + params.nx) * (rmd-1) + packet * (rank-rmd+1);
         end = (packet + params.nx) * (rmd-1) + packet * (rank-rmd+2);
     }
-   
-   printf("R%d S%d E%d\n",rank,start,end);
 
     /* iterate for maxIters timesteps */
     gettimeofday(&timstr,NULL);

@@ -174,8 +174,8 @@ int main(int argc, char* argv[])
         end = packet * (rank+1);
     } else {
     	buff = (params.ny/size + 1) * params.nx;
-        start = (packet + params.nx) * (rmd-1) + packet * (rank-rmd);
-        end = (packet + params.nx) * (rmd-1) + packet * (rank-rmd+1);
+        start = (packet + params.nx) * rmd + packet * (rank-rmd);
+        end = (packet + params.nx) * rmd + packet * (rank-rmd+1);
     }
 
     printf("Rank:%d, start:%d, end:%d\n",rank,start,end);

@@ -178,8 +178,6 @@ int main(int argc, char* argv[])
         end = (packet + params.nx) * rmd + packet * (rank-rmd+1);
     }
 
-    printf("Rank:%d, start:%d, end:%d\n",rank,start,end);
-
     /* iterate for maxIters timesteps */
     gettimeofday(&timstr,NULL);
     tic=timstr.tv_sec+(timstr.tv_usec/1000000.0);
@@ -258,15 +256,15 @@ int main(int argc, char* argv[])
 		    for(ii=rmd;ii<size;ii++) {
 		        MPI_Recv(buffer, 9*buff, MPI_FLOAT, ii, 3, MPI_COMM_WORLD, &status);
 		        for(jj=0;jj<(params.ny/size) * params.nx;jj++) {
-		            cells[packet * (rmd-1) + (packet-params.nx) * (ii-rmd+1)+jj].speeds[0] = buffer[9*jj];
-		            cells[packet * (rmd-1) + (packet-params.nx) * (ii-rmd+1)+jj].speeds[1] = buffer[9*jj+1];
-		            cells[packet * (rmd-1) + (packet-params.nx) * (ii-rmd+1)+jj].speeds[2] = buffer[9*jj+2];
-		            cells[packet * (rmd-1) + (packet-params.nx) * (ii-rmd+1)+jj].speeds[3] = buffer[9*jj+3];
-		            cells[packet * (rmd-1) + (packet-params.nx) * (ii-rmd+1)+jj].speeds[4] = buffer[9*jj+4];
-		            cells[packet * (rmd-1) + (packet-params.nx) * (ii-rmd+1)+jj].speeds[5] = buffer[9*jj+5];
-		            cells[packet * (rmd-1) + (packet-params.nx) * (ii-rmd+1)+jj].speeds[6] = buffer[9*jj+6];
-		            cells[packet * (rmd-1) + (packet-params.nx) * (ii-rmd+1)+jj].speeds[7] = buffer[9*jj+7];
-		            cells[packet * (rmd-1) + (packet-params.nx) * (ii-rmd+1)+jj].speeds[8] = buffer[9*jj+8];
+                    cells[packet * rmd + (packet-params.nx) * (ii-rmd) + jj].speeds[0] = buffer[9*jj];
+                    cells[packet * rmd + (packet-params.nx) * (ii-rmd) + jj].speeds[1] = buffer[9*jj+1];
+                    cells[packet * rmd + (packet-params.nx) * (ii-rmd) + jj].speeds[2] = buffer[9*jj+2];
+		            cells[packet * rmd + (packet-params.nx) * (ii-rmd) + jj].speeds[3] = buffer[9*jj+3];
+		            cells[packet * rmd + (packet-params.nx) * (ii-rmd) + jj].speeds[4] = buffer[9*jj+4];
+		            cells[packet * rmd + (packet-params.nx) * (ii-rmd) + jj].speeds[5] = buffer[9*jj+5];
+		            cells[packet * rmd + (packet-params.nx) * (ii-rmd) + jj].speeds[6] = buffer[9*jj+6];
+		            cells[packet * rmd + (packet-params.nx) * (ii-rmd) + jj].speeds[7] = buffer[9*jj+7];
+		            cells[packet * rmd + (packet-params.nx) * (ii-rmd) + jj].speeds[8] = buffer[9*jj+8];
 		        }
 		    }
         }

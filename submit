@@ -14,6 +14,10 @@
 
 #! application name
 application="./d2q9-bgk.exe input_128x128.params obstacles_128x128_box_square.dat"
+#application="./d2q9-bgk.exe input_128x128.params obstacles_128x128_box.dat"
+#application="./d2q9-bgk.exe input_128x256.params obstacles_128x256_sandwich.dat"
+#application="./d2q9-bgk.exe input_700x500.params obstacles_700x500_lip.dat"
+#application="./d2q9-bgk.exe input_1024x1024.params obstacles_1024x1024_box.dat"
 
 #! Run options for the application
 options=""

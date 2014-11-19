@@ -372,9 +372,9 @@ int accelerate_flow(const t_param params, t_speed* cells, int* obstacles, int in
         // Odd ranks receive then send.
         if(rank % 2 == 0) {
             // send up
-            MPI_Ssend(to_up, buffer_size, MPI_FLOAT, up, 2, MPI_COMM_WORLD);
+            MPI_Send(to_up, buffer_size, MPI_FLOAT, up, 2, MPI_COMM_WORLD);
             // send down
-            MPI_Ssend(to_down, buffer_size, MPI_FLOAT, down, 1, MPI_COMM_WORLD);
+            MPI_Send(to_down, buffer_size, MPI_FLOAT, down, 1, MPI_COMM_WORLD);
             // receive from down
             MPI_Recv(from_down, buffer_size, MPI_FLOAT, down, 2, MPI_COMM_WORLD, &status);
             // receive from up
@@ -386,9 +386,9 @@ int accelerate_flow(const t_param params, t_speed* cells, int* obstacles, int in
             // receive from up
             MPI_Recv(from_up, buffer_size, MPI_FLOAT, up, 1, MPI_COMM_WORLD, &status);
             // send up
-            MPI_Ssend(to_up, buffer_size, MPI_FLOAT, up, 2, MPI_COMM_WORLD);
+            MPI_Send(to_up, buffer_size, MPI_FLOAT, up, 2, MPI_COMM_WORLD);
             // send down
-            MPI_Ssend(to_down, buffer_size, MPI_FLOAT, down, 1, MPI_COMM_WORLD);
+            MPI_Send(to_down, buffer_size, MPI_FLOAT, down, 1, MPI_COMM_WORLD);
         }
 
         // Copy received values into cells.

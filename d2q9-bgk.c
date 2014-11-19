@@ -321,10 +321,11 @@ int accelerate_flow(const t_param params, t_speed* cells, int* obstacles, int in
         }
     }
 
+    int size;
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
     if(index != 0 && size > 1) {
-        int rank, size, up, down;
+        int rank, up, down;
         MPI_Status status;  
 
         MPI_Comm_rank(MPI_COMM_WORLD, &rank);
